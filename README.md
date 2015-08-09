@@ -5,7 +5,7 @@ Hydra is a program written in Haskell for live coding OpenGL with Lua. The main 
 
 I recommend using cabal-dev to build it currently:
 
-cd <path/to/Hydra>
+cd /path/to/Hydra
 cabal-dev install
 
 Then to run it:
