@@ -1,0 +1,97 @@
+-- rt is the run time in fractions of a second of the program
+rt = 0
+
+-- init the draw function
+function draw() end
+
+-- support for function overloading
+function overloaded()
+    local fns = {}
+    local mt = {}
+    
+    local function oerror()
+        return error("Invalid argument types to overloaded function")
+    end
+    
+    function mt:__call(...)
+        local arg = {...}
+        local default = self.default
+        
+        local signature = {}
+        for i,arg in ipairs {...} do
+            signature[i] = type(arg)
+        end
+        
+        signature = table.concat(signature, ",")
+        
+        return (fns[signature] or self.default)(...)
+    end
+    
+    function mt:__index(key)
+        local signature = {}
+        local function __newindex(self, key, value)
+            print(key, type(key), value, type(value))
+            signature[#signature+1] = key
+            fns[table.concat(signature, ",")] = value
+            print("bind", table.concat(signature, ", "))
+        end
+        local function __index(self, key)
+            print("I", key, type(key))
+            signature[#signature+1] = key
+            return setmetatable({}, { __index = __index, __newindex = __newindex })
+        end
+        return __index(self, key)
+    end
+    
+    function mt:__newindex(key, value)
+        fns[key] = value
+    end
+    
+    return setmetatable({ default = oerror }, mt)
+end
+
+-- SuperCollider's linear to linear remapping
+function linlin(x,a,b,c,d)
+    return (x - a) / (b - a) * (d - c) + c
+end
+
+-- SuperCollider's foldback distortion
+function fold(input,lo,hi)
+    b = hi - lo
+    b2 = b+b
+    c = (input - lo) % b2
+    if c > b then c = b2-c end
+    return c + lo
+end
+
+-- oscillator emulation TODO: make these better
+-- frequency is in Hz
+-- phase is always 0-1
+function SawWave(freq,lo,hi,phase)
+    freq = freq or 1
+    lo = lo or 0
+    hi = hi or 1
+    phase = phase or 0
+    rf = 1/freq
+    return linlin( (rt + phase) % rf, 0, rf, lo, hi)
+end
+
+function TriWave(freq,lo,hi,phase)
+    freq = freq or 1
+    lo = lo or 0
+    hi = hi or 1
+    phase = phase or 0
+    rf = 1/freq
+    return linlin( fold( linlin( (rt + phase) % rf, 0, rf, 0, 2), 0, 1 ), 0, 1, lo, hi )
+end
+
+function PulseWave(freq,width,lo,hi,phase)
+    freq = freq or 1
+    width = width or 0.5
+    lo = lo or 0
+    hi = hi or 1
+    phase = phase or 0
+    rf = 1/freq
+    val = linlin( (rt + phase) % rf, 0, rf, lo, hi)
+    if val >= width then return 0 else return 1 end
+end
