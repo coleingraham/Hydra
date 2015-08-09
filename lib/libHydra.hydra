@@ -4,6 +4,17 @@ rt = 0
 -- init the draw function
 function draw() end
 
+-- get values and errors from Haskell
+_HASKELLERR = {}
+
+function catch_haskell(ret, err_msg)
+    if ret == _HASKELLERR then
+      -- `error` call adds a prefix to error message
+      error(err_msg)
+    end
+    return ret
+end
+
 -- support for function overloading
 function overloaded()
     local fns = {}
@@ -72,8 +83,8 @@ function SawWave(freq,lo,hi,phase)
     lo = lo or 0
     hi = hi or 1
     phase = phase or 0
-    rf = 1/freq
-    return linlin( (rt + phase) % rf, 0, rf, lo, hi)
+    period = 1/freq
+    return linlin( (rt + phase) % period, 0, period, lo, hi)
 end
 
 function TriWave(freq,lo,hi,phase)
@@ -81,8 +92,8 @@ function TriWave(freq,lo,hi,phase)
     lo = lo or 0
     hi = hi or 1
     phase = phase or 0
-    rf = 1/freq
-    return linlin( fold( linlin( (rt + phase) % rf, 0, rf, 0, 2), 0, 1 ), 0, 1, lo, hi )
+    period = 1/freq
+    return linlin( fold( linlin( (rt + phase) % period, 0, period, 0, 2), 0, 1 ), 0, 1, lo, hi )
 end
 
 function PulseWave(freq,width,lo,hi,phase)
@@ -91,7 +102,7 @@ function PulseWave(freq,width,lo,hi,phase)
     lo = lo or 0
     hi = hi or 1
     phase = phase or 0
-    rf = 1/freq
-    val = linlin( (rt + phase) % rf, 0, rf, lo, hi)
+    period = 1/freq
+    val = linlin( (rt + phase) % period, 0, period, lo, hi)
     if val >= width then return 0 else return 1 end
 end

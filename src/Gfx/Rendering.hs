@@ -8,10 +8,13 @@ import qualified Data.ByteString as BS
 import           Data.IORef
 import qualified Data.Vector.Storable as V
 import qualified Graphics.Rendering.OpenGL as GL
-import Graphics.Rendering.OpenGL.Raw
+import           Graphics.Rendering.OpenGL.Raw
 import qualified Graphics.UI.GLFW as GLFW
 import           Graphics.Rendering.OpenGL (($=))
+import qualified Graphics.GLUtil as U
+import qualified Graphics.GLUtil.Camera3D as U
 import qualified Scripting.Lua as Lua
+import           System.FilePath ((</>))
 import           System.Exit (exitFailure)
 import           System.IO
 import qualified Util.GLFW as W
@@ -39,23 +42,25 @@ initResources = do
         hPutStrLn stderr "Error in fragment shader\n"
         exitFailure
 
-    program <- GL.createProgram
-    GL.attachShader program vs
-    GL.attachShader program fs
-    GL.attribLocation program "coord3d" $= GL.AttribLocation 0
-    GL.attribLocation program "v_color" $= GL.AttribLocation 1
-    GL.linkProgram program
-    linkOK <- GL.get $ GL.linkStatus program
-    GL.validateProgram program
-    status <- GL.get $ GL.validateStatus program
-    unless (linkOK && status) $ do
-        hPutStrLn stderr "GL.linkProgram error"
-        plog <- GL.get $ GL.programInfoLog program
-        putStrLn plog
-        exitFailure
-    GL.currentProgram $= Just program
+--     program <- GL.createProgram
+--     GL.attachShader program vs
+--     GL.attachShader program fs
+--    GL.attribLocation program "coord3d" $= GL.AttribLocation 0
+--    GL.attribLocation program "v_color" $= GL.AttribLocation 1
+--    GL.linkProgram program
+--    linkOK <- GL.get $ GL.linkStatus program
+--    GL.validateProgram program
+--    status <- GL.get $ GL.validateStatus program
+--    unless (linkOK && status) $ do
+--        hPutStrLn stderr "GL.linkProgram error"
+--        plog <- GL.get $ GL.programInfoLog program
+--        putStrLn plog
+--        exitFailure
+--    GL.currentProgram $= Just program
     
     let attrib = GL.AttribLocation 0
+    
+    program <- U.simpleShaderProgram ("lib" </> "defaultShader.v.glsl") ("lib" </> "defaultShader.f.glsl")
 
     l <- Lua.newstate
     Lua.openlibs l
@@ -78,7 +83,8 @@ draw state = do
 
 drawNode :: RenderNode -> IO ()
 drawNode node = do
-    GL.currentProgram $= Just prog
+    GL.currentProgram $= (Just . U.program . shader_program $ node)
+--    GL.currentProgram $= Just prog
     t <- maybe 0 id <$> GLFW.getTime
     Lua.loadstring l ("rt = " ++ (show t))""
     Lua.call l 0 0
@@ -110,27 +116,63 @@ background r g b a = do
         bb = realToFrac b :: GLfloat
         aa = realToFrac a :: GLfloat
 
-
-drawLine :: RenderNode -> Double -> Double -> Double -> Double -> Double -> Double -> IO ()
-drawLine rn x1 y1 z1 x2 y2 z2 = do
+drawThing :: RenderNode -> GL.PrimitiveMode -> GL.NumArrayIndices -> V.Vector Float -> IO ()
+drawThing rn mode num vertices = do
     clist <- getVertexColorList rn (V.length vertices)
     let colors = V.fromList clist
 
     GL.vertexAttribArray attrib $= GL.Enabled
-    GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Enabled
+--    GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Enabled
+    U.enableAttrib (shader_program rn) "coord3d"
+    U.enableAttrib (shader_program rn) "v_color"
     V.unsafeWith vertices $ \ptr ->
-        GL.vertexAttribPointer attrib $=
+--         GL.vertexAttribPointer attrib $=
+        GL.vertexAttribPointer (U.getAttrib (shader_program rn) "coord3d") $=
           (GL.ToFloat, GL.VertexArrayDescriptor 3 GL.Float 0 ptr)
     V.unsafeWith colors $ \ptr -> do
-            GL.vertexAttribPointer (GL.AttribLocation 1) $=
+--            GL.vertexAttribPointer (GL.AttribLocation 1) $=
+            GL.vertexAttribPointer (U.getAttrib (shader_program rn) "v_color") $=
                 (GL.ToFloat, GL.VertexArrayDescriptor 4 GL.Float 0 ptr)
-    GL.drawArrays GL.Lines 0 2 -- 2 is the number of vertices
-    GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Disabled
+    GL.drawArrays mode 0 num
+    GL.vertexAttribArray (U.getAttrib (shader_program rn) "coord3d") $= GL.Disabled
+    GL.vertexAttribArray (U.getAttrib (shader_program rn) "v_color") $= GL.Disabled
+--    GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Disabled
     GL.vertexAttribArray attrib $= GL.Disabled
     where
         attrib = vertex_attribute rn
+
+drawLine :: RenderNode -> 
+    Double -> Double -> Double ->
+    Double -> Double -> Double -> IO ()
+drawLine rn x1 y1 z1 x2 y2 z2 = do
+    drawThing rn GL.Lines 2 vertices
+    where
         vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
                               ,  realToFrac x2, realToFrac y2, realToFrac z2
+                              ] :: V.Vector Float
+
+drawTriangle :: RenderNode -> 
+    Double -> Double -> Double ->
+    Double -> Double -> Double ->
+    Double -> Double -> Double -> IO ()
+drawTriangle rn x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
+    drawThing rn GL.Triangles 3 vertices
+    where
+        vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
+                              ,  realToFrac x2, realToFrac y2, realToFrac z2
+                              ,  realToFrac x3, realToFrac y3, realToFrac z3
+                              ] :: V.Vector Float
+
+drawRectangle :: RenderNode -> 
+    Double -> Double -> Double ->
+    Double -> Double -> Double -> IO ()
+drawRectangle rn x1 y1 z1 x2 y2 z2 = do
+    drawThing rn GL.Quads 4 vertices
+    where
+        vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
+                              ,  realToFrac x2, realToFrac y1, realToFrac ((z1+z2)/2)
+                              ,  realToFrac x2, realToFrac y2, realToFrac ((z1+z2)/2)
+                              ,  realToFrac x1, realToFrac y2, realToFrac z2
                               ] :: V.Vector Float
 
 --------------------------------

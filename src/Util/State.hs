@@ -4,6 +4,8 @@ import           Control.Concurrent
 import           Data.IORef
 import           Data.List (intercalate)
 import qualified Data.Vector.Storable as V
+import qualified Graphics.GLUtil as U
+import qualified Graphics.GLUtil.Camera3D as U
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
 import qualified Scripting.Lua as Lua
@@ -37,8 +39,15 @@ getVertexColorList rn len = do
     let clist = intercalate [] $ replicate len (colorToFloatList dc)
     return clist
 
+-- | Represents the shader program and its input buffers
+data Resources = Resources { shaderProgram :: U.ShaderProgram
+--                           , vertBuffer    :: GL.BufferObject
+--                           , colorBuffer   :: GL.BufferObject
+--                           , elementBuffer :: GL.BufferObject
+                           }
+
 data RenderNode = RenderNode {
-        shader_program   :: GL.Program,
+        shader_program   :: U.ShaderProgram, --GL.Program,
         vertex_attribute :: GL.AttribLocation,
         lua_state        :: Lua.LuaState,
         graphic_state    :: GraphicState
@@ -46,7 +55,6 @@ data RenderNode = RenderNode {
 
 data HydraState = HydraState {
         window     :: GLFW.Window,
---        osc_server :: ThreadId,
         nodes      :: RenderNode
     }
 

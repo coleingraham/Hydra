@@ -39,7 +39,8 @@ sendNetAddrMsg n m = sendOsc (oscClient n) m
 receiveFunc :: HydraState -> Message -> IO ()
 receiveFunc h m
     | addr == "/code" = do
-        Lua.loadstring ls (ascii_to_string $ d_ascii_string $ head msg) ""
+--        Lua.loadstring ls ("catch_haskell(" ++ ( ascii_to_string $ d_ascii_string $ head msg) ++ ")" )""
+        Lua.loadstring ls ( ascii_to_string $ d_ascii_string $ head msg) ""
         Lua.call ls 0 0
         return ()
     | otherwise       = print "random message"
