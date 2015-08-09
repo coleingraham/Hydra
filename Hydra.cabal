@@ -6,7 +6,7 @@ version:             0.1.0.0
 synopsis:            Program for interactive visuals
 description:         TODO
 homepage:            www.coleingraham.com
-license:             GPL
+license:             MIT
 license-file:        LICENSE
 author:              Cole Ingraham
 maintainer:          coledingraham@gmail.com
