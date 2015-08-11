@@ -1,5 +1,15 @@
 -- rt is the run time in fractions of a second of the program
 rt = 0
+-- the run time value for the previous frame (used to calculate dt)
+last_rt = 0
+-- dt is the delta between frames
+dt = 0
+
+function updateTime(time)
+    rt = time
+    dt = rt - last_rt
+    last_rt = rt
+end
 
 -- init the draw function
 function draw() end

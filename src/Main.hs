@@ -32,10 +32,24 @@ hy_sin a = return $ sin a
 registerLuaFunctions :: HydraState -> IO ()
 registerLuaFunctions hs = do
     Lua.registerhsfunction l "background" background
-    Lua.registerhsfunction l "color" (color rn)
-    Lua.registerhsfunction l "line" (drawLine rn)
-    Lua.registerhsfunction l "triangle" (drawTriangle rn)
-    Lua.registerhsfunction l "rect" (drawRectangle rn)
+    Lua.registerhsfunction l "color" (color hs)
+    Lua.registerhsfunction l "line" (drawLine hs)
+    Lua.registerhsfunction l "triangle" (drawTriangle hs)
+    Lua.registerhsfunction l "rect" (drawRectangle hs)
+
+    Lua.registerhsfunction l "cameraLocation" (cameraLocation hs)
+    Lua.registerhsfunction l "cameraPan" (cameraPan hs)
+    Lua.registerhsfunction l "cameraTilt" (cameraTilt hs)
+    Lua.registerhsfunction l "cameraRoll" (cameraRoll hs)
+    
+    Lua.registerhsfunction l "pushMatrix" (pushMatrix (graphic_state rn))
+    Lua.registerhsfunction l "popMatrix" (popMatrix (graphic_state rn))
+
+    Lua.registerhsfunction l "translate" (translate hs)
+    Lua.registerhsfunction l "rotateX" (rotateX hs)
+    Lua.registerhsfunction l "rotateY" (rotateY hs)
+    Lua.registerhsfunction l "rotateZ" (rotateZ hs)
+    Lua.registerhsfunction l "scale" (scale hs)
 
     Lua.registerhsfunction l "setWindowPos" (GLFW.setWindowPos $ window hs)
     Lua.registerhsfunction l "setWindowSize" (GLFW.setWindowSize $ window hs)

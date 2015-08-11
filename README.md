@@ -19,15 +19,30 @@ If all goes well, you should see a black 800x600 window in the center of your sc
 ```
 (
 NetAddr("127.0.0.1",57150).sendMsg(
-"/code",
-"function draw()"
-" background(0,0,0,1)"
-" x = TriWave(0.5)"
-" for i=0,10 do\n"
-"  color(TriWave(2),0,0,1)"
-"  line(-i/10*x, -1*TriWave(0.4,-1,1), 0, (i/10)*x, 1*x, 0)"
-" end\n"
-"end"
+    "/code",
+    "function draw()"
+    " cameraLocation(0,0,TriWave(0.1,1,2))"
+    " cameraPan(TriWave(0.12,-20,20))"
+    " cameraTilt(TriWave(0.13,-20,20))"
+    " background(0,0,0,1)"
+    " color(0,1,1,1)"
+    " pushMatrix()"
+    " translate(0.5,0,0.5)"
+    " rotateZ(1)"
+    " rect(0.5,0.25)"
+    " popMatrix()"
+    " color(1,0,1,1)"
+    " rect(0.5,0.25)"
+    " color(0,1,0,1)"
+    " for i=0,3 do\n"
+    "  rotateZ(SawWave(0.1,0,6.2831853071796))"
+    "  translate(TriWave(0.2,0,1),0,-1)"
+    "  scale(TriWave(0.5,0.5,1),
+    TriWave(0.4,0.5,1),
+    TriWave(0.6,0.5,1))"
+    "  rect(0.5,0.25)"
+    " end\n"
+    "end"
 );
 )
 ```

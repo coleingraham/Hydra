@@ -13,6 +13,7 @@ import qualified Graphics.UI.GLFW as GLFW
 import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.GLUtil as U
 import qualified Graphics.GLUtil.Camera3D as U
+import qualified Linear as L
 import qualified Scripting.Lua as Lua
 import           System.FilePath ((</>))
 import           System.Exit (exitFailure)
@@ -24,40 +25,7 @@ initResources :: IO RenderNode
 initResources = do
     GL.blend $= GL.Enabled
     GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
-    -- compile vertex shader
-    vs <- GL.createShader GL.VertexShader
-    GL.shaderSourceBS vs $= vsSource
-    GL.compileShader vs
-    vsOK <- GL.get $ GL.compileStatus vs
-    unless vsOK $ do
-        hPutStrLn stderr "Error in vertex shader\n"
-        exitFailure
 
-    -- Do it again for the fragment shader
-    fs <- GL.createShader GL.FragmentShader
-    GL.shaderSourceBS fs $= fsSource
-    GL.compileShader fs
-    fsOK <- GL.get $ GL.compileStatus fs
-    unless fsOK $ do
-        hPutStrLn stderr "Error in fragment shader\n"
-        exitFailure
-
---     program <- GL.createProgram
---     GL.attachShader program vs
---     GL.attachShader program fs
---    GL.attribLocation program "coord3d" $= GL.AttribLocation 0
---    GL.attribLocation program "v_color" $= GL.AttribLocation 1
---    GL.linkProgram program
---    linkOK <- GL.get $ GL.linkStatus program
---    GL.validateProgram program
---    status <- GL.get $ GL.validateStatus program
---    unless (linkOK && status) $ do
---        hPutStrLn stderr "GL.linkProgram error"
---        plog <- GL.get $ GL.programInfoLog program
---        putStrLn plog
---        exitFailure
---    GL.currentProgram $= Just program
-    
     let attrib = GL.AttribLocation 0
     
     program <- U.simpleShaderProgram ("lib" </> "defaultShader.v.glsl") ("lib" </> "defaultShader.f.glsl")
@@ -79,28 +47,35 @@ draw state = do
     GL.depthFunc $= Just GL.Less
     (width, height) <- GLFW.getFramebufferSize $ window state
     GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral width) (fromIntegral height))
-    drawNode $ nodes state
+    drawNode state
+    GLFW.swapBuffers $ window state
 
-drawNode :: RenderNode -> IO ()
-drawNode node = do
+drawNode :: HydraState -> IO ()
+drawNode state = do
+    clearMatrixStack $ graphic_state node
     GL.currentProgram $= (Just . U.program . shader_program $ node)
---    GL.currentProgram $= Just prog
+    U.enableAttrib (shader_program node) "coord3d"
+    U.enableAttrib (shader_program node) "v_color"
     t <- maybe 0 id <$> GLFW.getTime
-    Lua.loadstring l ("rt = " ++ (show t))""
+    Lua.loadstring l ("updateTime(" ++ (show t) ++ ")") ""
     Lua.call l 0 0
     Lua.getglobal l "draw"
     Lua.pcall l 0 0 0
+    GL.vertexAttribArray (U.getAttrib (shader_program node) "coord3d") $= GL.Disabled
+    GL.vertexAttribArray (U.getAttrib (shader_program node) "v_color") $= GL.Disabled
     return ()
     where
+        node = nodes state
         prog = shader_program node
         l    = lua_state node
 
 --------------------------------
 
-color :: RenderNode -> Double -> Double -> Double -> Double -> IO ()
-color node r g b a = do
+color :: HydraState -> Double -> Double -> Double -> Double -> IO ()
+color state r g b a = do
     writeIORef (draw_color $ graphic_state node) $ DrawColor rr gg bb aa
     where
+        node = nodes state
         rr = realToFrac r :: GLfloat
         gg = realToFrac g :: GLfloat
         bb = realToFrac b :: GLfloat
@@ -116,90 +91,144 @@ background r g b a = do
         bb = realToFrac b :: GLfloat
         aa = realToFrac a :: GLfloat
 
-drawThing :: RenderNode -> GL.PrimitiveMode -> GL.NumArrayIndices -> V.Vector Float -> IO ()
-drawThing rn mode num vertices = do
+translate :: HydraState -> Double -> Double -> Double -> IO ()
+translate state x y z = do
+    let mat = L.mkTransformationMat L.eye3 $ L.V3 xx yy zz
+    modifyActiveMatrix rn mat
+    where
+        rn = nodes state
+        xx = realToFrac x :: GLfloat
+        yy = realToFrac y :: GLfloat
+        zz = realToFrac z :: GLfloat
+
+rotate_ :: L.V3 GL.GLfloat -> HydraState -> Double -> IO ()
+rotate_ axis state rad = do
+    let mat = L.m33_to_m44 . L.fromQuaternion $ L.axisAngle axis angle
+    modifyActiveMatrix rn mat
+    where
+        rn = nodes state
+        angle = realToFrac rad :: GLfloat
+
+rotateX :: HydraState -> Double -> IO ()
+rotateX = rotate_ (L.V3 1 0 0)
+
+rotateY :: HydraState -> Double -> IO ()
+rotateY = rotate_ (L.V3 0 1 0)
+
+rotateZ :: HydraState -> Double -> IO ()
+rotateZ = rotate_ (L.V3 0 0 1)
+
+scale :: HydraState -> Double -> Double -> Double -> IO ()
+scale state x y z = do
+   let mat = L.V4 (L.V4 xx 0 0 0) (L.V4 0 yy 0 0) (L.V4 0 0 zz 0) (L.V4 0 0 0 1)
+   modifyActiveMatrix rn mat
+    where
+        rn = nodes state
+        xx = realToFrac x :: GLfloat
+        yy = realToFrac y :: GLfloat
+        zz = realToFrac z :: GLfloat
+
+cameraLocation :: HydraState -> Double -> Double -> Double -> IO ()
+cameraLocation state x y z = do
+    c <- readIORef $ camera gs
+    writeIORef (camera gs) $ Camera vec (pan c) (tilt c) (roll c)
+    where
+        gs  = graphic_state $ nodes state
+        vec = L.V3 xx yy zz
+        xx  = realToFrac x :: GLfloat
+        yy  = realToFrac y :: GLfloat
+        zz  = realToFrac z :: GLfloat
+
+cameraPan :: HydraState -> Double -> IO ()
+cameraPan state p = do
+    c <- readIORef $ camera gs
+    writeIORef (camera gs) $ Camera (location c) pp (tilt c) (roll c)
+    where
+        gs  = graphic_state $ nodes state
+        pp  = realToFrac p :: GL.GLfloat
+
+cameraTilt :: HydraState -> Double -> IO ()
+cameraTilt state t = do
+    c <- readIORef $ camera gs
+    writeIORef (camera gs) $ Camera (location c) (pan c) tt (roll c)
+    where
+        gs  = graphic_state $ nodes state
+        tt  = realToFrac t :: GL.GLfloat
+
+cameraRoll :: HydraState -> Double -> IO ()
+cameraRoll state r = do
+    c <- readIORef $ camera gs
+    writeIORef (camera gs) $ Camera (location c) (pan c) (tilt c) rr
+    where
+        gs  = graphic_state $ nodes state
+        rr  = realToFrac r :: GL.GLfloat
+
+cameraView :: Camera -> Int -> Int -> L.M44 GL.GLfloat
+cameraView c width height = projection L.!*! view
+    where
+        aspect     = fromIntegral width / fromIntegral height
+        projection = U.projectionMatrix (pi/4) aspect 0.1 10
+        cam        = U.pan (pan c) . U.roll (roll c)  .  U.tilt (tilt c) . U.dolly (location c) $ U.fpsCamera
+        view       = U.camMatrix cam
+
+drawThing :: HydraState -> GL.PrimitiveMode -> GL.NumArrayIndices -> V.Vector Float -> IO ()
+drawThing state mode num vertices = do
+    t <- maybe 0 id <$> GLFW.getTime
+    (width, height) <- GLFW.getFramebufferSize $ window state
+
+    stack <- readIORef $ matrix_stack $ graphic_state rn
+    cam <- readIORef $ camera $ graphic_state rn
+    let mvp = (cameraView cam width height) L.!*! (flattenMatrix stack)
+    U.asUniform mvp $ U.getUniform (shader_program rn) "mvp"
+
     clist <- getVertexColorList rn (V.length vertices)
     let colors = V.fromList clist
-
-    GL.vertexAttribArray attrib $= GL.Enabled
---    GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Enabled
-    U.enableAttrib (shader_program rn) "coord3d"
-    U.enableAttrib (shader_program rn) "v_color"
-    V.unsafeWith vertices $ \ptr ->
---         GL.vertexAttribPointer attrib $=
-        GL.vertexAttribPointer (U.getAttrib (shader_program rn) "coord3d") $=
-          (GL.ToFloat, GL.VertexArrayDescriptor 3 GL.Float 0 ptr)
     V.unsafeWith colors $ \ptr -> do
---            GL.vertexAttribPointer (GL.AttribLocation 1) $=
             GL.vertexAttribPointer (U.getAttrib (shader_program rn) "v_color") $=
                 (GL.ToFloat, GL.VertexArrayDescriptor 4 GL.Float 0 ptr)
-    GL.drawArrays mode 0 num
-    GL.vertexAttribArray (U.getAttrib (shader_program rn) "coord3d") $= GL.Disabled
-    GL.vertexAttribArray (U.getAttrib (shader_program rn) "v_color") $= GL.Disabled
---    GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Disabled
-    GL.vertexAttribArray attrib $= GL.Disabled
-    where
-        attrib = vertex_attribute rn
 
-drawLine :: RenderNode -> 
+    V.unsafeWith vertices $ \ptr ->
+        GL.vertexAttribPointer (U.getAttrib (shader_program rn) "coord3d") $=
+          (GL.ToFloat, GL.VertexArrayDescriptor 3 GL.Float 0 ptr)
+
+    GL.drawArrays mode 0 num
+    where
+        rn             = nodes state
+
+drawLine :: HydraState -> 
     Double -> Double -> Double ->
     Double -> Double -> Double -> IO ()
-drawLine rn x1 y1 z1 x2 y2 z2 = do
-    drawThing rn GL.Lines 2 vertices
+drawLine state x1 y1 z1 x2 y2 z2 = do
+    drawThing state GL.Lines 2 vertices
     where
         vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
                               ,  realToFrac x2, realToFrac y2, realToFrac z2
                               ] :: V.Vector Float
 
-drawTriangle :: RenderNode -> 
+drawTriangle :: HydraState -> 
     Double -> Double -> Double ->
     Double -> Double -> Double ->
     Double -> Double -> Double -> IO ()
-drawTriangle rn x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
-    drawThing rn GL.Triangles 3 vertices
+drawTriangle state x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
+    drawThing state GL.Triangles 3 vertices
     where
         vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
                               ,  realToFrac x2, realToFrac y2, realToFrac z2
                               ,  realToFrac x3, realToFrac y3, realToFrac z3
                               ] :: V.Vector Float
 
-drawRectangle :: RenderNode -> 
-    Double -> Double -> Double ->
-    Double -> Double -> Double -> IO ()
-drawRectangle rn x1 y1 z1 x2 y2 z2 = do
-    drawThing rn GL.Quads 4 vertices
+drawRectangle :: HydraState -> Double -> Double -> IO ()
+drawRectangle state width height = do
+    drawThing state GL.Quads 4 vertices
     where
-        vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
-                              ,  realToFrac x2, realToFrac y1, realToFrac ((z1+z2)/2)
-                              ,  realToFrac x2, realToFrac y2, realToFrac ((z1+z2)/2)
-                              ,  realToFrac x1, realToFrac y2, realToFrac z2
+        x1 = (width/2) * (-1)
+        x2 = (width/2)
+        y1 = (height/2) * (-1)
+        y2 = (height/2)
+        z  = 0
+        vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z
+                              ,  realToFrac x2, realToFrac y1, realToFrac z
+                              ,  realToFrac x2, realToFrac y2, realToFrac z
+                              ,  realToFrac x1, realToFrac y2, realToFrac z
                               ] :: V.Vector Float
-
---------------------------------
-
-vsSource, fsSource :: BS.ByteString
-vsSource = BS.intercalate "\n"
-           [
-             "attribute vec3 coord3d;"
-           , "attribute vec4 v_color;"
---           , "uniform mat4 mvp;"
-           , "varying vec4 f_color;"
-           , ""
-           , "void main(void) { "
---           , "  gl_Position = mvp * vec4(coord3d, 1.0);"
-           , "  gl_Position = vec4(coord3d, 1.0);"
-           , "  f_color = v_color;"
-           , "}"
-           ]
-
-fsSource = BS.intercalate "\n"
-           [
-            "varying vec4 f_color;"
-           , ""
-           , "void main(void) { "
-           , "  gl_FragColor = f_color;"
-           , "}"
-           ]
-
---------------------------------
 
