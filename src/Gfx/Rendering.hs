@@ -34,7 +34,7 @@ initResources = do
     Lua.openlibs l
     -- disable harmful libs
     Lua.loadstring l "require = nil os = nil" "" 
-    Lua.pcall l 0 0 0
+    Lua.call l 0 0
 
     dc <- defaultGraphicState
 
@@ -93,13 +93,26 @@ background r g b a = do
 
 translate :: HydraState -> Double -> Double -> Double -> IO ()
 translate state x y z = do
-    let mat = L.mkTransformationMat L.eye3 $ L.V3 xx yy zz
+    let mat = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 xx yy zz
     modifyActiveMatrix rn mat
     where
         rn = nodes state
         xx = realToFrac x :: GLfloat
         yy = realToFrac y :: GLfloat
         zz = realToFrac z :: GLfloat
+
+rotate :: HydraState -> Double -> Double -> Double -> IO ()
+rotate state x y z = do
+    modifyActiveMatrix rn mat
+    where
+        rn  = nodes state
+        xx  = realToFrac x :: GLfloat
+        yy  = realToFrac y :: GLfloat
+        zz  = realToFrac z :: GLfloat
+        rx  = L.m33_to_m44 . L.fromQuaternion $ L.axisAngle (L.V3 1 0 0) xx
+        ry  = L.m33_to_m44 . L.fromQuaternion $ L.axisAngle (L.V3 0 1 0) yy
+        rz  = L.m33_to_m44 . L.fromQuaternion $ L.axisAngle (L.V3 0 0 1) zz
+        mat = rx L.!*! ry L.!*! rz
 
 rotate_ :: L.V3 GL.GLfloat -> HydraState -> Double -> IO ()
 rotate_ axis state rad = do

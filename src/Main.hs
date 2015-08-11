@@ -16,46 +16,79 @@ import           System.IO
 import qualified Util.GLFW as W
 import           Util.State
 
-displayWidth win = do
-    mon <- GLFW.getWindowMonitor win
-    case mon of
+displayWidth :: Int -> IO Int
+displayWidth index = do
+    mons <- GLFW.getMonitors
+    case mons of
         Nothing -> return 1
-        Just m -> do
+        Just mons' -> do
+            let m = mons' !! index
             vmode <- GLFW.getVideoMode m
             case vmode of
                 Nothing -> return 1
                 Just vm -> return $ GLFW.videoModeWidth vm
 
-hy_sin :: Double -> IO Double
-hy_sin a = return $ sin a
+displayHeight :: Int -> IO Int
+displayHeight index = do
+    mons <- GLFW.getMonitors
+    case mons of
+        Nothing -> return 1
+        Just mons' -> do
+            let m = mons' !! index
+            vmode <- GLFW.getVideoMode m
+            case vmode of
+                Nothing -> return 1
+                Just vm -> return $ GLFW.videoModeHeight vm
+
+displayX :: Int -> IO Int
+displayX index = do
+    mons <- GLFW.getMonitors
+    case mons of
+        Nothing -> return 1
+        Just mons' -> do
+            let m = mons' !! index
+            pos <- GLFW.getMonitorPos m
+            return $ fst $ pos
+
+displayY :: Int -> IO Int
+displayY index = do
+    mons <- GLFW.getMonitors
+    case mons of
+        Nothing -> return 1
+        Just mons' -> do
+            let m = mons' !! index
+            pos <- GLFW.getMonitorPos m
+            return $ snd $ pos
 
 registerLuaFunctions :: HydraState -> IO ()
 registerLuaFunctions hs = do
     Lua.registerhsfunction l "background" background
-    Lua.registerhsfunction l "color" (color hs)
-    Lua.registerhsfunction l "line" (drawLine hs)
-    Lua.registerhsfunction l "triangle" (drawTriangle hs)
-    Lua.registerhsfunction l "rect" (drawRectangle hs)
+    Lua.registerhsfunction l "colorRGBA"  (color hs)
+    Lua.registerhsfunction l "line"       (drawLine hs)
+    Lua.registerhsfunction l "triangle"   (drawTriangle hs)
+    Lua.registerhsfunction l "rect"       (drawRectangle hs)
 
     Lua.registerhsfunction l "cameraLocation" (cameraLocation hs)
-    Lua.registerhsfunction l "cameraPan" (cameraPan hs)
-    Lua.registerhsfunction l "cameraTilt" (cameraTilt hs)
-    Lua.registerhsfunction l "cameraRoll" (cameraRoll hs)
+    Lua.registerhsfunction l "cameraPan"      (cameraPan hs)
+    Lua.registerhsfunction l "cameraTilt"     (cameraTilt hs)
+    Lua.registerhsfunction l "cameraRoll"     (cameraRoll hs)
     
     Lua.registerhsfunction l "pushMatrix" (pushMatrix (graphic_state rn))
-    Lua.registerhsfunction l "popMatrix" (popMatrix (graphic_state rn))
+    Lua.registerhsfunction l "popMatrix"  (popMatrix (graphic_state rn))
 
     Lua.registerhsfunction l "translate" (translate hs)
-    Lua.registerhsfunction l "rotateX" (rotateX hs)
-    Lua.registerhsfunction l "rotateY" (rotateY hs)
-    Lua.registerhsfunction l "rotateZ" (rotateZ hs)
-    Lua.registerhsfunction l "scale" (scale hs)
+    Lua.registerhsfunction l "rotate"    (rotate hs)
+    Lua.registerhsfunction l "rotateX"   (rotateX hs)
+    Lua.registerhsfunction l "rotateY"   (rotateY hs)
+    Lua.registerhsfunction l "rotateZ"   (rotateZ hs)
+    Lua.registerhsfunction l "scale"     (scale hs)
 
-    Lua.registerhsfunction l "setWindowPos" (GLFW.setWindowPos $ window hs)
-    Lua.registerhsfunction l "setWindowSize" (GLFW.setWindowSize $ window hs)
-    Lua.registerhsfunction l "displayWidth" (displayWidth $ window hs)
-    
-    Lua.registerhsfunction l "sin" hy_sin
+    Lua.registerhsfunction l "setWindowPosition" (GLFW.setWindowPos $ window hs)
+    Lua.registerhsfunction l "setWindowSize"     (GLFW.setWindowSize $ window hs)
+    Lua.registerhsfunction l "displayWidth"      displayWidth
+    Lua.registerhsfunction l "displayHeight"     displayHeight
+    Lua.registerhsfunction l "displayX"          displayX
+    Lua.registerhsfunction l "displayY"          displayY
     
     Lua.loadfile l ("lib" </> "libHydra.hydra")
     Lua.call l 0 0
@@ -65,7 +98,7 @@ registerLuaFunctions hs = do
 
 -- main :: IO ()
 main = do
-    win <- W.initialize "Hydra Window!"
+    win <- W.initialize "Hydra"
     node <- initResources
     let state = HydraState win node
     registerLuaFunctions state
@@ -73,4 +106,3 @@ main = do
     W.mainLoop (draw state) win
     W.cleanup win
     Lua.close $ lua_state node
-    print "testing"

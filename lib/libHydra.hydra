@@ -5,10 +5,34 @@ last_rt = 0
 -- dt is the delta between frames
 dt = 0
 
+PI = 3.1415926535898
+TWO_PI = 6.2831853071796
+
 function updateTime(time)
     rt = time
     dt = rt - last_rt
     last_rt = rt
+end
+
+function scaleX(x)
+    scale(x,1,1)
+end
+
+function scaleY(y)
+    scale(1,y,1)
+end
+
+function scaleZ(z)
+    scale(1,1,z)
+end
+
+function color(...)
+    local one, two, three, four = ...
+    if four ~= nil then colorRGBA(one,two,three,four) -- R G B A
+    elseif three ~= nil then colorRGBA(one,two,three,1) -- R G B
+    elseif two ~= nil then colorRGBA(one,one,one,two) -- Gray A
+    else color_(one,one,one,1) -- Gray
+    end
 end
 
 -- init the draw function
@@ -89,6 +113,15 @@ end
 -- frequency is in Hz
 -- phase is always 0-1
 function SawWave(freq,lo,hi,phase)
+    freq = freq or 1
+    lo = lo or 0
+    hi = hi or 1
+    phase = phase or 0
+    period = 1/freq
+    return linlin( (rt + phase) % period, 0, period, lo, hi)
+end
+
+function SinWave(freq,lo,hi,phase)
     freq = freq or 1
     lo = lo or 0
     hi = hi or 1

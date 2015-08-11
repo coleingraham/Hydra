@@ -37,7 +37,7 @@ data GraphicState = GraphicState {
         ,camera       :: IORef Camera
     }
 
-emptyMatrix = L.mkTransformationMat L.eye3 $ L.V3 0 0 0
+emptyMatrix = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 0 0 0
 
 flattenMatrix :: [L.M44 GL.GLfloat] -> L.M44 GL.GLfloat
 flattenMatrix stack = foldl (\acc x -> acc L.!*! x) emptyMatrix stack
@@ -83,13 +83,6 @@ getVertexColorList rn len = do
     dc <- readIORef $ draw_color $ graphic_state rn
     let clist = intercalate [] $ replicate len (colorToFloatList dc)
     return clist
-
--- | Represents the shader program and its input buffers
-data Resources = Resources { shaderProgram :: U.ShaderProgram
---                           , vertBuffer    :: GL.BufferObject
---                           , colorBuffer   :: GL.BufferObject
---                           , elementBuffer :: GL.BufferObject
-                           }
 
 data RenderNode = RenderNode {
         shader_program   :: U.ShaderProgram, --GL.Program,
