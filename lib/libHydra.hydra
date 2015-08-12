@@ -14,6 +14,11 @@ function updateTime(time)
     last_rt = rt
 end
 
+function receiveOscMessage(address,message)
+    print(address)
+    print(unpack(message))
+end
+
 function scaleX(x)
     scale(x,1,1)
 end
@@ -26,12 +31,21 @@ function scaleZ(z)
     scale(1,1,z)
 end
 
+function background(...)
+    local one, two, three, four = ...
+    if four ~= nil then backgroundRGBA(one,two,three,four) -- R G B A
+    elseif three ~= nil then backgroundRGBA(one,two,three,1) -- R G B
+    elseif two ~= nil then backgroundRGBA(one,one,one,two) -- Gray A
+    else backgroundRGBA(one,one,one,1) -- Gray
+    end
+end
+
 function color(...)
     local one, two, three, four = ...
     if four ~= nil then colorRGBA(one,two,three,four) -- R G B A
     elseif three ~= nil then colorRGBA(one,two,three,1) -- R G B
     elseif two ~= nil then colorRGBA(one,one,one,two) -- Gray A
-    else color_(one,one,one,1) -- Gray
+    else colorRGBA(one,one,one,1) -- Gray
     end
 end
 

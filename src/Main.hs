@@ -62,7 +62,7 @@ displayY index = do
 
 registerLuaFunctions :: HydraState -> IO ()
 registerLuaFunctions hs = do
-    Lua.registerhsfunction l "background" background
+    Lua.registerhsfunction l "backgroundRGBA" background
     Lua.registerhsfunction l "colorRGBA"  (color hs)
     Lua.registerhsfunction l "line"       (drawLine hs)
     Lua.registerhsfunction l "triangle"   (drawTriangle hs)
