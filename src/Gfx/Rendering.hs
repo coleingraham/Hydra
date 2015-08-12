@@ -184,6 +184,18 @@ cameraView c width height = projection L.!*! view
         cam        = U.pan (pan c) . U.roll (roll c)  .  U.tilt (tilt c) . U.dolly (location c) $ U.fpsCamera
         view       = U.camMatrix cam
 
+stroke :: HydraState -> IO ()
+stroke state = do
+    writeIORef mode Stroke
+    where
+        mode = draw_mode $ graphic_state $ nodes state
+
+fill :: HydraState -> IO ()
+fill state = do
+    writeIORef mode Fill
+    where
+        mode = draw_mode $ graphic_state $ nodes state
+
 drawThing :: HydraState -> GL.PrimitiveMode -> GL.NumArrayIndices -> V.Vector Float -> IO ()
 drawThing state mode num vertices = do
     t <- maybe 0 id <$> GLFW.getTime
@@ -223,25 +235,46 @@ drawTriangle :: HydraState ->
     Double -> Double -> Double ->
     Double -> Double -> Double -> IO ()
 drawTriangle state x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
-    drawThing state GL.Triangles 3 vertices
+    dmode <- readIORef mode
+    whichMode dmode 
     where
-        vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
-                              ,  realToFrac x2, realToFrac y2, realToFrac z2
-                              ,  realToFrac x3, realToFrac y3, realToFrac z3
-                              ] :: V.Vector Float
+        mode        = draw_mode $ graphic_state $ nodes state
+        whichMode m = case m of
+                       Fill   -> drawThing state GL.Triangles 3 verticesF
+                       Stroke -> drawThing state GL.LineStrip 4 verticesS
+        verticesF   = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
+                                 ,  realToFrac x2, realToFrac y2, realToFrac z2
+                                 ,  realToFrac x3, realToFrac y3, realToFrac z3
+                                 ] :: V.Vector Float
+        verticesS   = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
+                                 ,  realToFrac x2, realToFrac y2, realToFrac z2
+                                 ,  realToFrac x3, realToFrac y3, realToFrac z3
+                                 ,  realToFrac x1, realToFrac y1, realToFrac z1
+                                 ] :: V.Vector Float
 
 drawRectangle :: HydraState -> Double -> Double -> IO ()
 drawRectangle state width height = do
-    drawThing state GL.Quads 4 vertices
+    dmode <- readIORef mode
+    whichMode dmode 
     where
+        mode        = draw_mode $ graphic_state $ nodes state
+        whichMode m = case m of
+                       Fill   -> drawThing state GL.Quads 4 verticesF
+                       Stroke -> drawThing state GL.LineStrip 5 verticesS
         x1 = (width/2) * (-1)
         x2 = (width/2)
         y1 = (height/2) * (-1)
         y2 = (height/2)
         z  = 0
-        vertices = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z
-                              ,  realToFrac x2, realToFrac y1, realToFrac z
-                              ,  realToFrac x2, realToFrac y2, realToFrac z
-                              ,  realToFrac x1, realToFrac y2, realToFrac z
-                              ] :: V.Vector Float
+        verticesF = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z
+                               ,  realToFrac x2, realToFrac y1, realToFrac z
+                               ,  realToFrac x2, realToFrac y2, realToFrac z
+                               ,  realToFrac x1, realToFrac y2, realToFrac z
+                               ] :: V.Vector Float
+        verticesS = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z
+                               ,  realToFrac x2, realToFrac y1, realToFrac z
+                               ,  realToFrac x2, realToFrac y2, realToFrac z
+                               ,  realToFrac x1, realToFrac y2, realToFrac z
+                               ,  realToFrac x1, realToFrac y1, realToFrac z
+                               ] :: V.Vector Float
 
