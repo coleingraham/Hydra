@@ -8,15 +8,38 @@ dt = 0
 PI = 3.1415926535898
 TWO_PI = 6.2831853071796
 
+OSCDEFS = {}
+
 function updateTime(time)
     rt = time
     dt = rt - last_rt
     last_rt = rt
 end
 
+-- pass OSC messages to every OSCdef listening for the address pattern
 function receiveOscMessage(address,message)
-    print(address)
-    print(unpack(message))
+    for name,func in pairs(OSCDEFS[address]) do
+        func(message)
+    end
+end
+
+-- add a function with the given name that listens to the given address
+-- to the global table of OSCdefs
+function OSCdef(name,address,func)
+    if OSCDEFS[address] == nil then
+        OSCDEFS[address] = {}
+    end
+    OSCDEFS[address][name] = func
+end
+
+function displayWidth(i)
+    i = i or 0
+    return displayWidthI(i)
+end
+
+function displayHeight(i)
+    i = i or 0
+    return displayHeightI(i)
 end
 
 function scaleX(x)
@@ -31,22 +54,22 @@ function scaleZ(z)
     scale(1,1,z)
 end
 
-function background(...)
+-- allow for Processing style color assignment
+function RGBA(func,...)
     local one, two, three, four = ...
-    if four ~= nil then backgroundRGBA(one,two,three,four) -- R G B A
-    elseif three ~= nil then backgroundRGBA(one,two,three,1) -- R G B
-    elseif two ~= nil then backgroundRGBA(one,one,one,two) -- Gray A
-    else backgroundRGBA(one,one,one,1) -- Gray
+    if four ~= nil then func(one,two,three,four) -- R G B A
+    elseif three ~= nil then func(one,two,three,1) -- R G B
+    elseif two ~= nil then func(one,one,one,two) -- Gray A
+    else func(one,one,one,1) -- Gray
     end
 end
 
+function background(...)
+    RGBA(backgroundRGBA,...)
+end
+
 function color(...)
-    local one, two, three, four = ...
-    if four ~= nil then colorRGBA(one,two,three,four) -- R G B A
-    elseif three ~= nil then colorRGBA(one,two,three,1) -- R G B
-    elseif two ~= nil then colorRGBA(one,one,one,two) -- Gray A
-    else colorRGBA(one,one,one,1) -- Gray
-    end
+    RGBA(colorRGBA,...)
 end
 
 -- init the draw function

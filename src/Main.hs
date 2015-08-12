@@ -85,8 +85,8 @@ registerLuaFunctions hs = do
 
     Lua.registerhsfunction l "setWindowPosition" (GLFW.setWindowPos $ window hs)
     Lua.registerhsfunction l "setWindowSize"     (GLFW.setWindowSize $ window hs)
-    Lua.registerhsfunction l "displayWidth"      displayWidth
-    Lua.registerhsfunction l "displayHeight"     displayHeight
+    Lua.registerhsfunction l "displayWidthI"     displayWidth
+    Lua.registerhsfunction l "displayHeightI"    displayHeight
     Lua.registerhsfunction l "displayX"          displayX
     Lua.registerhsfunction l "displayY"          displayY
     

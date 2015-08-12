@@ -35,7 +35,6 @@ createOscClient ip sendingPort = openUDP ip sendingPort
 sendNetAddrMsg :: NetAddr -> Message -> IO ()
 sendNetAddrMsg n m = sendOsc (oscClient n) m
 
--- TODO: this needs to map over all nodes for all messages going to Lua
 receiveFunc :: HydraState -> Message -> IO ()
 receiveFunc h m
     | addr == "/code" = do
