@@ -236,45 +236,50 @@ drawTriangle :: HydraState ->
     Double -> Double -> Double -> IO ()
 drawTriangle state x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
     dmode <- readIORef mode
-    whichMode dmode 
+    drawThing state (whichMode dmode) 3 vertices
     where
         mode        = draw_mode $ graphic_state $ nodes state
         whichMode m = case m of
-                       Fill   -> drawThing state GL.Triangles 3 verticesF
-                       Stroke -> drawThing state GL.LineStrip 4 verticesS
-        verticesF   = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
+                       Fill   -> GL.Triangles 
+                       Stroke -> GL.LineLoop
+        vertices    = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
                                  ,  realToFrac x2, realToFrac y2, realToFrac z2
                                  ,  realToFrac x3, realToFrac y3, realToFrac z3
-                                 ] :: V.Vector Float
-        verticesS   = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z1
-                                 ,  realToFrac x2, realToFrac y2, realToFrac z2
-                                 ,  realToFrac x3, realToFrac y3, realToFrac z3
-                                 ,  realToFrac x1, realToFrac y1, realToFrac z1
                                  ] :: V.Vector Float
 
 drawRectangle :: HydraState -> Double -> Double -> IO ()
 drawRectangle state width height = do
     dmode <- readIORef mode
-    whichMode dmode 
+    drawThing state (whichMode dmode) 4 vertices
     where
         mode        = draw_mode $ graphic_state $ nodes state
         whichMode m = case m of
-                       Fill   -> drawThing state GL.Quads 4 verticesF
-                       Stroke -> drawThing state GL.LineStrip 5 verticesS
+                       Fill   -> GL.Quads 
+                       Stroke -> GL.LineLoop 
         x1 = (width/2) * (-1)
         x2 = (width/2)
         y1 = (height/2) * (-1)
         y2 = (height/2)
         z  = 0
-        verticesF = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z
+        vertices = V.fromList [   realToFrac x1, realToFrac y1, realToFrac z
                                ,  realToFrac x2, realToFrac y1, realToFrac z
                                ,  realToFrac x2, realToFrac y2, realToFrac z
                                ,  realToFrac x1, realToFrac y2, realToFrac z
-                               ] :: V.Vector Float
-        verticesS = V.fromList [  realToFrac x1, realToFrac y1, realToFrac z
-                               ,  realToFrac x2, realToFrac y1, realToFrac z
-                               ,  realToFrac x2, realToFrac y2, realToFrac z
-                               ,  realToFrac x1, realToFrac y2, realToFrac z
-                               ,  realToFrac x1, realToFrac y1, realToFrac z
                                ] :: V.Vector Float
 
+drawDisk :: HydraState -> Double -> Double -> IO ()
+drawDisk state num rad = do
+    dmode <- readIORef mode
+    drawThing state (whichMode dmode) (floor n) vertices
+    where
+        mode        = draw_mode $ graphic_state $ nodes state
+        whichMode m = case m of
+                       Fill   -> GL.TriangleFan
+                       Stroke -> GL.LineLoop 
+        f fn = map (* rad) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n-1)]
+        n  =  realToFrac $ floor num :: Double
+        xs = f sin
+        ys = f cos
+        zs = take (floor n) $ repeat 0
+        list = concatMap (\(x,y,z) -> [x,y,z]) $ zip3 xs ys zs
+        vertices = V.fromList $ map realToFrac list :: V.Vector Float
