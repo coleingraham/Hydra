@@ -59,6 +59,8 @@ drawNode state = do
     t <- maybe 0 id <$> GLFW.getTime
     Lua.loadstring l ("updateTime(" ++ (show t) ++ ")") ""
     Lua.call l 0 0
+    Lua.loadstring l "updateTimeFunctions()" ""
+    Lua.call l 0 0
     Lua.getglobal l "draw"
     Lua.pcall l 0 0 0
     GL.vertexAttribArray (U.getAttrib (shader_program node) "coord3d") $= GL.Disabled
