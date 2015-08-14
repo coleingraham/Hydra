@@ -58,12 +58,13 @@ drawNode state = do
     U.enableAttrib (shader_program node) "coord3d"
     U.enableAttrib (shader_program node) "v_color"
     t <- maybe 0 id <$> GLFW.getTime
-    Lua.loadstring l ("updateTime(" ++ (show t) ++ ")") ""
-    Lua.call l 0 0
-    Lua.loadstring l "updateTimeFunctions()" ""
+    Lua.getglobal l "updateTime"
+    Lua.pushnumber l $ realToFrac t
+    Lua.call l 1 0
+    Lua.getglobal l "updateTimeFunctions"
     Lua.call l 0 0
     Lua.getglobal l "draw"
-    Lua.pcall l 0 0 0
+    Lua.call l 0 0
     GL.vertexAttribArray (U.getAttrib (shader_program node) "coord3d") $= GL.Disabled
     GL.vertexAttribArray (U.getAttrib (shader_program node) "v_color") $= GL.Disabled
     return ()
