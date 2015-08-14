@@ -290,20 +290,20 @@ drawDisk state num rad = do
 drawRing :: HydraState -> Double -> Double -> Double -> IO ()
 drawRing state num rad thick = do
     dmode <- readIORef mode
-    drawThing state (whichMode dmode) (floor (n*2+2)) vertices
+    case dmode of
+        Fill   -> drawThing state GL.QuadStrip (floor (n*2+2)) vertices
+        Stroke -> do
+                  drawDisk state num (rad + hthick)
+                  drawDisk state num (rad - hthick)
     where
         mode        = draw_mode $ graphic_state $ nodes state
-        whichMode m = case m of
-                       Fill   -> GL.QuadStrip
-                       Stroke -> GL.Lines
         hthick   = thick / 2
         n        = realToFrac $ floor num :: Double
-        f1 fn    = map (* (rad+hthick)) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n+1)]
-        f2 fn    = map (* (rad-hthick)) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n+1)]
-        xs1      = f1 sin
-        ys1      = f1 cos
-        xs2      = f2 sin
-        ys2      = f2 cos
+        f fn r   = map (* r) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n+1)]
+        xs1      = f sin (rad+hthick)
+        ys1      = f cos (rad+hthick)
+        xs2      = f sin (rad-hthick)
+        ys2      = f cos (rad-hthick)
         zs       = take (floor (n+1)) $ repeat 0
         outer    = zip3 xs1 ys1 zs
         inner    = zip3 xs2 ys2 zs
