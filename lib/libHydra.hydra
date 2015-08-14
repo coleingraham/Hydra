@@ -89,7 +89,7 @@ function List.new()
     return {first = 0, last = -1}
 end
 
-function List.pushleft(list, value)
+function List.pushleft (list, value)
     local first = list.first - 1
     list.first = first
     list[first] = value
@@ -119,21 +119,24 @@ function List.popright(list)
     return value
 end
 
-
----------- OSC ----------
-
-OSCDEFS = {}
-
 function updateTime(time)
     rt = time
     dt = rt - last_rt
     last_rt = rt
 end
 
+---------- OSC ----------
+
+OSCDEFS = {}
+
+function osctest(val)
+    print(val)
+end
+
 -- pass OSC messages to every OSCdef listening for the address pattern
-function receiveOscMessage(address,message)
+function receiveOscMessage(address,...)
     for name,func in pairs(OSCDEFS[address]) do
-        func(message)
+        func(...)
     end
 end
 
