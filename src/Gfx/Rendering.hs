@@ -23,8 +23,11 @@ import           Util.State
 
 initResources :: IO RenderNode
 initResources = do
+    GL.depthFunc $= Just GL.Less
     GL.blend $= GL.Enabled
+    GL.blendEquation $= GL.FuncAdd
     GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
+--    GL.blendFuncSeparate $= ((GL.SrcAlpha, GL.OneMinusSrcAlpha), (GL.One, GL.One))
 
     let attrib = GL.AttribLocation 0
     
@@ -44,11 +47,9 @@ initResources = do
 
 draw :: HydraState -> IO ()
 draw state = do
-    GL.depthFunc $= Just GL.Less
     (width, height) <- GLFW.getFramebufferSize $ window state
     GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral width) (fromIntegral height))
     drawNode state
-    GLFW.swapBuffers $ window state
 
 drawNode :: HydraState -> IO ()
 drawNode state = do
@@ -278,10 +279,33 @@ drawDisk state num rad = do
         whichMode m = case m of
                        Fill   -> GL.TriangleFan
                        Stroke -> GL.LineLoop 
-        f fn = map (* rad) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n-1)]
-        n  =  realToFrac $ floor num :: Double
-        xs = f sin
-        ys = f cos
-        zs = take (floor n) $ repeat 0
-        list = concatMap (\(x,y,z) -> [x,y,z]) $ zip3 xs ys zs
+        n        = realToFrac $ floor num :: Double
+        f fn     = map (* rad) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n-1)]
+        xs       = f sin
+        ys       = f cos
+        zs       = take (floor n) $ repeat 0
+        list     = concatMap (\(x,y,z) -> [x,y,z]) $ zip3 xs ys zs
+        vertices = V.fromList $ map realToFrac list :: V.Vector Float
+
+drawRing :: HydraState -> Double -> Double -> Double -> IO ()
+drawRing state num rad thick = do
+    dmode <- readIORef mode
+    drawThing state (whichMode dmode) (floor (n*2+2)) vertices
+    where
+        mode        = draw_mode $ graphic_state $ nodes state
+        whichMode m = case m of
+                       Fill   -> GL.QuadStrip
+                       Stroke -> GL.Lines
+        hthick   = thick / 2
+        n        = realToFrac $ floor num :: Double
+        f1 fn    = map (* (rad+hthick)) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n+1)]
+        f2 fn    = map (* (rad-hthick)) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n+1)]
+        xs1      = f1 sin
+        ys1      = f1 cos
+        xs2      = f2 sin
+        ys2      = f2 cos
+        zs       = take (floor (n+1)) $ repeat 0
+        outer    = zip3 xs1 ys1 zs
+        inner    = zip3 xs2 ys2 zs
+        list     = concatMap (\((x1,y1,z1),(x2,y2,z2)) -> [x1,y1,z1,x2,y2,z2]) $ zip outer inner
         vertices = V.fromList $ map realToFrac list :: V.Vector Float

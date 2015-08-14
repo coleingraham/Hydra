@@ -68,6 +68,7 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "triangle"       (drawTriangle hs)
     Lua.registerhsfunction l "rect"           (drawRectangle hs)
     Lua.registerhsfunction l "disk"           (drawDisk hs)
+    Lua.registerhsfunction l "ring"           (drawRing hs)
 
     Lua.registerhsfunction l "stroke" (stroke hs)
     Lua.registerhsfunction l "fill"   (fill hs)

@@ -1,13 +1,11 @@
--- rt is the run time in fractions of a second of the program
-rt = 0
--- the run time value for the previous frame (used to calculate dt)
-last_rt = 0
--- dt is the delta between frames
-dt = 0
+---------- Globals ----------
+
+rt = 0      -- rt is the run time in fractions of a second of the program
+last_rt = 0 -- the run time value for the previous frame (used to calculate dt)
+dt = 0      -- dt is the delta between frames
 
 PI = math.pi
 TWO_PI = math.pi * 2
-
 
 TIMEFUNCTIONS = {}
 
@@ -21,6 +19,30 @@ function updateTimeFunctions()
     end
 end
 
+-- set the value of the supplied global vairable
+function setfield(f, v)
+    local t = _G    -- start with the table of globals
+    for w, d in string.gfind(f, "([%w_]+)(.?)") do
+        if d == "." then      -- not last field?
+            t[w] = t[w] or {}   -- create table if absent
+            t = t[w]            -- get the table
+            else                  -- last field
+            t[w] = v            -- do the assignment
+        end
+    end
+end
+
+-- return the value of the supplied global vairable
+function getfield(f)
+    local v = _G    -- start with the table of globals
+    for w in string.gfind(f, "[%w_]+") do
+        v = v[w]
+    end
+    return v
+end
+
+-- linear interpolation from a start value to an end value over
+-- a period of time
 function ramp(varname,start,finish,duration)
     local start_time = rt
     
@@ -36,6 +58,8 @@ function ramp(varname,start,finish,duration)
     TIMEFUNCTIONS[varname] = func
 end
 
+-- linear interpolation from the current value to an end value over
+-- a period of time
 function rampTo(varname,finish,duration)
     local start_time = rt
     local start = getfield(varname)
@@ -52,6 +76,51 @@ function rampTo(varname,finish,duration)
     TIMEFUNCTIONS[varname] = func
 end
 
+function map(func,table)
+    local out = {}
+    for _,v in pairs(table) do
+        table.insert(out,func(v))
+    end
+    return out
+end
+
+List = {}
+function List.new()
+    return {first = 0, last = -1}
+end
+
+function List.pushleft(list, value)
+    local first = list.first - 1
+    list.first = first
+    list[first] = value
+end
+
+function List.pushright(list, value)
+    local last = list.last + 1
+    list.last = last
+    list[last] = value
+end
+
+function List.popleft(list)
+    local first = list.first
+    if first > list.last then error("list is empty") end
+    local value = list[first]
+    list[first] = nil        -- to allow garbage collection
+    list.first = first + 1
+    return value
+end
+
+function List.popright(list)
+    local last = list.last
+    if list.first > last then error("list is empty") end
+    local value = list[last]
+    list[last] = nil         -- to allow garbage collection
+    list.last = last - 1
+    return value
+end
+
+
+---------- OSC ----------
 
 OSCDEFS = {}
 
@@ -59,26 +128,6 @@ function updateTime(time)
     rt = time
     dt = rt - last_rt
     last_rt = rt
-end
-
-function setfield(f, v)
-    local t = _G    -- start with the table of globals
-    for w, d in string.gfind(f, "([%w_]+)(.?)") do
-        if d == "." then      -- not last field?
-            t[w] = t[w] or {}   -- create table if absent
-            t = t[w]            -- get the table
-            else                  -- last field
-            t[w] = v            -- do the assignment
-        end
-    end
-end
-
-function getfield (f)
-    local v = _G    -- start with the table of globals
-    for w in string.gfind(f, "[%w_]+") do
-        v = v[w]
-    end
-    return v
 end
 
 -- pass OSC messages to every OSCdef listening for the address pattern
@@ -97,6 +146,8 @@ function OSCdef(name,address,func)
     OSCDEFS[address][name] = func
 end
 
+---------- Window Control ----------
+
 function displayWidth(i)
     i = i or 0
     return displayWidthI(i)
@@ -106,6 +157,8 @@ function displayHeight(i)
     i = i or 0
     return displayHeightI(i)
 end
+
+---------- Transformations ----------
 
 function scaleX(x)
     scale(x,1,1)
@@ -118,6 +171,8 @@ end
 function scaleZ(z)
     scale(1,1,z)
 end
+
+---------- Color ----------
 
 Color = {r=0,g=0,b=0,a=0}
 
@@ -193,6 +248,8 @@ end
 -- init the draw function
 function draw() end
 
+---------- Lua/Haskell Utilities ----------
+
 -- get values and errors from Haskell
 _HASKELLERR = {}
 
@@ -250,6 +307,8 @@ function overloaded()
     return setmetatable({ default = oerror }, mt)
 end
 
+---------- Utility Functions ----------
+
 -- SuperCollider's linear to linear remapping
 function linlin(x,a,b,c,d)
     return (x - a) / (b - a) * (d - c) + c
@@ -263,6 +322,8 @@ function fold(input,lo,hi)
     if c > b then c = b2-c end
     return c + lo
 end
+
+---------- Oscillators ----------
 
 -- oscillator emulation TODO: make these better
 -- period in seconds per cycle
@@ -280,7 +341,7 @@ function SinWave(period,lo,hi,phase)
     lo = lo or 0
     hi = hi or 1
     phase = phase or 0
-    return linlin( (rt + phase) % period, 0, period, lo, hi)
+    return linlin( math.sin(linlin( (rt + phase) % period, 0, period,0,TWO_PI)), -1, 1, lo, hi)
 end
 
 function TriWave(period,lo,hi,phase)
@@ -299,3 +360,4 @@ function PulseWave(period,width,lo,hi,phase)
     val = linlin( (rt + phase) % period, 0, period, lo, hi)
     if val >= width then return 0 else return 1 end
 end
+
