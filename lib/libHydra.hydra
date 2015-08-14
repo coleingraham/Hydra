@@ -119,19 +119,17 @@ function List.popright(list)
     return value
 end
 
-function updateTime(time)
+function _update(time)
     rt = time
     dt = rt - last_rt
     last_rt = rt
+
+    updateTimeFunctions()
 end
 
 ---------- OSC ----------
 
 OSCDEFS = {}
-
-function osctest(val)
-    print(val)
-end
 
 -- pass OSC messages to every OSCdef listening for the address pattern
 function receiveOscMessage(address,...)

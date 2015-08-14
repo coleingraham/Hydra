@@ -53,7 +53,7 @@ receiveFunc h m
             | r == 0 = return ()
             | otherwise = do
                 e <- Lua.tostring l (-1)
-                print $ "Error: " ++ (show e)
+                print $ "Receive Error: " ++ (show e)
                 return ()
         addr      = messageAddress m
         msg       = messageDatum m
