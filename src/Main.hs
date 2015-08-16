@@ -11,6 +11,8 @@ import qualified Graphics.UI.GLFW as GLFW
 import           OSC.Networking
 import qualified Scripting.Lua as Lua
 import           System.FilePath ((</>))
+import           System.Console.GetOpt
+import           System.Environment (getArgs)
 import           System.Exit (exitFailure)
 import           System.IO
 import qualified Util.GLFW as W
@@ -95,13 +97,55 @@ registerLuaFunctions hs = do
         rn = nodes hs
         l = lua_state rn
 
--- main :: IO ()
+data Options = Options {
+     optPort     :: Int
+    ,optSettings :: String
+    }
+
+defaultOptions :: Options
+defaultOptions = Options {
+     optPort     = 57150
+    ,optSettings = ""
+    }
+
+options :: [OptDescr (Options -> IO Options)]
+options = [
+            Option "p" ["port"]
+                (ReqArg
+                    (\arg opt -> return opt {optPort = read arg})
+                    "PORT" )
+                "osc listen port"
+          , Option "s" ["settings"]
+                (ReqArg
+                    (\arg opt -> return opt {optSettings = arg})
+                    "FILE")
+                "load settings file"
+          ]
+
+main :: IO ()
 main = do
+    args <- getArgs
+    let (actions, nonOptions, errors) = getOpt RequireOrder options args
+    opts <- foldl (>>=) (return defaultOptions) actions
+    let Options {
+          optPort = port
+        , optSettings = settings
+        } = opts
+    
     win <- W.initialize "Hydra"
     node <- initResources
     let state = HydraState win node
     registerLuaFunctions state
-    server <- createOscServer 57150 $ receiveFunc $ state
+    
+    let p = optPort opts
+    putStrLn $ "Hydra: listening on port " ++ (show p)
+    server <- createOscServer p $ receiveFunc $ state
+{-
+    let s = optSettings opts
+    print $ "Hydra: loading settings from " ++ s
+    Lua.loadfile (lua_state $ nodes state) s
+    Lua.pcall (lua_state $ nodes state) 0 0 0
+-}
     W.mainLoop (draw state) win
     W.cleanup win
     Lua.close $ lua_state node
