@@ -14,38 +14,20 @@ Then to run it:
 
 `./dist/build/Hydra/Hydra`
 
-If all goes well, you should see a black 800x600 window in the center of your screen! In order to make it do anything, you need to send it Lua code via OSC. As I currently do not have a better solution, I recommend using this code in SuperCollider:
+If all goes well, you should see a black 640x480 window in the center of your screen! In order to make it do anything, you need to send it Lua code via OSC. I currently use oscsend from the command line via a vim plugin I wrote (vim-hydra). If you have both that and oscsend installed, you can run the following code in vim:
 
 ```
-(
-NetAddr("127.0.0.1",57150).sendMsg(
-    "/code",
-    "function draw()"
-    " cameraLocation(0,0,TriWave(0.1,1,2))"
-    " cameraPan(TriWave(0.12,-20,20))"
-    " cameraTilt(TriWave(0.13,-20,20))"
-    " background(0,0,0,1)"
-    " color(0,1,1,1)"
-    " pushMatrix()"
-    " translate(0.5,0,0.5)"
-    " rotateZ(1)"
-    " rect(0.5,0.25)"
-    " popMatrix()"
-    " color(1,0,1,1)"
-    " rect(0.5,0.25)"
-    " color(0,1,0,1)"
-    " for i=0,3 do\n"
-    "  rotateZ(SawWave(0.1,0,6.2831853071796))"
-    "  translate(TriWave(0.2,0,1),0,-1)"
-    "  scale(TriWave(0.5,0.5,1),
-    TriWave(0.4,0.5,1),
-    TriWave(0.6,0.5,1))"
-    "  rect(0.5,0.25)"
-    " end\n"
-    "end"
-);
-)
+function draw()
+    cameraLocation(0,0,2)
+    background(0)
+    translate(SinWave(4,-0.5,0.5),SinWave(4,-0.5,0.5,0.75),0)
+    color(Color:hsla(SawWave(5),1,0.5))
+    stroke()
+    ring(TriWave(7,3,30),TriWave(3,0.2,0.6),TriWave(2,0.01,0.3))
+end
 ```
+
+by selecting it (easiest is with `<shift>-v`) and pressing `<leader>h`
 
 There is currently no documentation. Some of the functions are defined in the Haskell source, while others are in lib/libHydra.hydra if you are interested.
 
