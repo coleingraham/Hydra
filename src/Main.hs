@@ -86,7 +86,7 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "rotateX"   (rotateX hs)
     Lua.registerhsfunction l "rotateY"   (rotateY hs)
     Lua.registerhsfunction l "rotateZ"   (rotateZ hs)
-    Lua.registerhsfunction l "scale"     (scale hs)
+    Lua.registerhsfunction l "scaleXYZ"  (scale hs)
 
     Lua.registerhsfunction l "setWindowPosition" (GLFW.setWindowPos $ window hs)
     Lua.registerhsfunction l "setWindowSize"     (GLFW.setWindowSize $ window hs)

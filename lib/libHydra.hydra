@@ -161,24 +161,35 @@ end
 
 ---------- Transformations ----------
 
+-- allow for one or two value scaling
+function scale(x,y,z)
+    y = y or x
+    z = z or y
+    scaleXYZ(x,y,z)
+end
+
 function scaleX(x)
-    scale(x,1,1)
+    scaleXYZ(x,1,1)
 end
 
 function scaleY(y)
-    scale(1,y,1)
+    scaleXYZ(1,y,1)
 end
 
 function scaleZ(z)
-    scale(1,1,z)
+    scaleXYZ(1,1,z)
 end
 
 ---------- Color ----------
 
 Color = {r=0,g=0,b=0,a=0}
 
+-- allow for Processing style color assignment
 function Color:new(...)
     local one, two, three, four = ...
+    
+    if type(one) == "table" then return one end
+    
     local c
     if four ~= nil then c = {r=one,g=two,b=three,a=four} -- R G B A
     elseif three ~= nil then c = {r=one,g=two,b=three,a=1} -- R G B
@@ -229,13 +240,8 @@ end
 
 -- allow for Processing style color assignment
 function RGBA(func,...)
-    local one, two, three, four = ...
-    if four ~= nil then func(one,two,three,four) -- R G B A
-    elseif three ~= nil then func(one,two,three,1) -- R G B
-    elseif two ~= nil then func(one,one,one,two) -- Gray A
-    elseif type(one) == "table" then func(one.r,one.g,one.b,one.a) -- from Color
-    else func(one,one,one,1) -- Gray
-    end
+    local c = Color:new(...)
+    func(c.r,c.g,c.b,c.a)
 end
 
 function background(...)
@@ -309,6 +315,32 @@ function overloaded()
 end
 
 ---------- Utility Functions ----------
+
+function randSeed(seed)
+    math.randomseed(seed)
+end
+
+-- random float
+-- if no args, return random number [0 - 1]
+-- if one arg, return random number [0 - one]
+-- if two args, return random number [one - two]
+function rand(one,two)
+    if one == nil then return math.random()
+    elseif two == nil then return linlin(math.random(),0,1,0,one)
+    else return linlin(math.random(),0,1,one,two) end
+end
+
+-- integer version of rand()
+function randI(one,two)
+    if two == nil then return math.random(one)
+    else return math.random(one,two) end
+end
+
+-- return a random value from an array
+function choose(array)
+    local n = #array
+    return array[randI(n)]
+end
 
 -- SuperCollider's linear to linear remapping
 function linlin(x,a,b,c,d)

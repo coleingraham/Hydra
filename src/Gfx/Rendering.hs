@@ -36,7 +36,7 @@ initResources = do
     l <- Lua.newstate
     Lua.openlibs l
     -- disable harmful libs
-    Lua.loadstring l "require = nil os = nil" "" 
+    Lua.loadstring l "math.randomseed(os.time()) loadstring = nil loadfile = nil require = nil os = nil" "" 
     Lua.call l 0 0
 
     dc <- defaultGraphicState
