@@ -86,6 +86,8 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "displayHeightI"    displayHeight
     Lua.registerhsfunction l "displayX"          displayX
     Lua.registerhsfunction l "displayY"          displayY
+
+    Lua.registerhsfunction l "import" (import_file hs)
     
     Lua.loadfile l ("lib" </> "libHydra.hydra")
     Lua.call l 0 0

@@ -1,0 +1,11 @@
+---------- 3D Vector ----------
+
+Vec = {x=0,y=0,z=0}
+
+function Vec:new(xx,yy,zz)
+    return {x=xx,y=yy,z=zz}
+end
+
+function Vec:zero()
+    return Vec:new(0,0,0)
+end

@@ -19,6 +19,17 @@ data DrawColor = DrawColor {
         ,a :: GL.GLfloat
     }
 
+get_draw_color :: Lua.LuaState -> IO DrawColor
+get_draw_color l = do
+    Lua.getglobal l "_HYDRA"
+    Lua.pushstring l $ BC.pack "draw_color"
+    Lua.gettable l (-2)
+    r <- get_num l "r"
+    g <- get_num l "g"
+    b <- get_num l "b"
+    a <- get_num l "a"
+    return $ DrawColor (toGL r) (toGL g) (toGL b) (toGL a)
+
 data DrawMode = Stroke | Fill deriving (Eq)
 
 get_draw_mode :: Lua.LuaState -> IO DrawMode
@@ -35,6 +46,19 @@ data Camera = Camera {
         ,tilt     :: GL.GLfloat
         ,roll     :: GL.GLfloat
     }
+
+get_camera :: Lua.LuaState -> IO Camera
+get_camera l = do
+    Lua.getglobal l "_HYDRA"
+    Lua.pushstring l $ BC.pack "camera"
+    Lua.gettable l (-2)
+    pan  <- get_num l "pan"
+    tilt <- get_num l "tilt"
+    roll <- get_num l "roll"
+    Lua.pushstring l $ BC.pack "location"
+    Lua.gettable l (-2)
+    loc  <- get_vec l
+    return $ Camera loc (toGL pan) (toGL tilt) (toGL roll)
 
 defaultCamera :: Camera
 defaultCamera = Camera (L.V3 0 0 0) 0 0 0
@@ -65,25 +89,26 @@ get_vec l = do
     z <- get_num l "z"
     return $ L.V3 (toGL x) (toGL y) (toGL z)
     
-get_camera :: Lua.LuaState -> IO Camera
-get_camera l = do
-    Lua.getglobal l "_HYDRA"
-    Lua.pushstring l $ BC.pack "camera"
-    Lua.gettable l (-2)
-    pan  <- get_num l "pan"
-    tilt <- get_num l "tilt"
-    roll <- get_num l "roll"
-    Lua.pushstring l $ BC.pack "location"
-    Lua.gettable l (-2)
-    loc  <- get_vec l
-    return $ Camera loc (toGL pan) (toGL tilt) (toGL roll)
-
 data GraphicState = GraphicState {
 --         draw_color   :: IORef DrawColor
 --        ,draw_mode    :: IORef DrawMode
         matrix_stack :: IORef [L.M44 GL.GLfloat]
 --        ,camera       :: IORef Camera
     }
+
+import_file :: HydraState -> BC.ByteString -> IO ()
+import_file state name = do
+    Lua.loadfile l $ (BC.unpack name) ++ ".hydra"
+    result <- Lua.pcall l 0 0 0
+    checkResult l result
+    where
+        checkResult l r
+            | r == 0 = return ()
+            | otherwise = do
+                e <- Lua.tostring l (-1)
+                print $ "Import Error: " ++ (show e)
+                return ()
+        l = lua_state $ nodes state
 
 emptyMatrix = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 0 0 0
 
@@ -126,19 +151,6 @@ defaultGraphicState = do
 
 colorToFloatList :: DrawColor -> [GL.GLfloat]
 colorToFloatList c = [r c,g c,b c,a c]
-
-get_draw_color :: Lua.LuaState -> IO DrawColor
-get_draw_color l = do
-    Lua.getglobal l "_HYDRA"
-    Lua.pushstring l $ BC.pack "draw_color"
-    Lua.gettable l (-2)
-
-    r <- get_num l "r"
-    g <- get_num l "g"
-    b <- get_num l "b"
-    a <- get_num l "a"
-
-    return $ DrawColor (toGL r) (toGL g) (toGL b) (toGL a)
 
 getVertexColorList :: HydraState -> Int -> IO [GL.GLfloat]
 getVertexColorList state len = do

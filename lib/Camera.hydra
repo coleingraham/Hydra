@@ -1,0 +1,16 @@
+---------- Camera ----------
+
+Camera = {
+    location = Vec:zero(),
+    pan      = 0,
+    tilt     = 0,
+    roll     = 0
+}
+
+function Camera:new(l,p,t,r)
+    l = l or Vec:zero()
+    p = p or 0
+    t = t or 0
+    r = r or 0
+    return {location = l, pan = p, tilt = t, roll = r}
+end
