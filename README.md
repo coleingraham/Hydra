@@ -16,7 +16,7 @@ Then to run it:
 
 If all goes well, you should see a black 640x480 window in the center of your screen! In order to make it do anything, you need to send it Lua code via OSC. I currently use oscsend from the command line via a vim plugin I wrote (vim-hydra). If you have both that and oscsend installed, you can run the following code in vim:
 
-```
+```lua
 function draw()
     cameraLocation(0,0,2)
     background(0)
