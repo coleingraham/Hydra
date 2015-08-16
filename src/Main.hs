@@ -63,18 +63,15 @@ displayY index = do
 registerLuaFunctions :: HydraState -> IO ()
 registerLuaFunctions hs = do
     Lua.registerhsfunction l "backgroundRGBA" background
-    Lua.registerhsfunction l "colorRGBA"      (color hs)
+--    Lua.registerhsfunction l "colorRGBA"      (color hs)
     Lua.registerhsfunction l "line"           (drawLine hs)
     Lua.registerhsfunction l "triangle"       (drawTriangle hs)
     Lua.registerhsfunction l "rect"           (drawRectangle hs)
     Lua.registerhsfunction l "disk"           (drawDisk hs)
     Lua.registerhsfunction l "ring"           (drawRing hs)
 
-    Lua.registerhsfunction l "stroke" (stroke hs)
-    Lua.registerhsfunction l "fill"   (fill hs)
-
-    Lua.registerhsfunction l "pushMatrix" (pushMatrix (graphic_state rn))
-    Lua.registerhsfunction l "popMatrix"  (popMatrix (graphic_state rn))
+    Lua.registerhsfunction l "pushMatrix" (pushMatrix hs)
+    Lua.registerhsfunction l "popMatrix"  (popMatrix hs)
 
     Lua.registerhsfunction l "translate" (translate hs)
     Lua.registerhsfunction l "rotate"    (rotate hs)

@@ -79,10 +79,10 @@ get_camera l = do
     return $ Camera loc (toGL pan) (toGL tilt) (toGL roll)
 
 data GraphicState = GraphicState {
-         draw_color   :: IORef DrawColor
-        ,draw_mode    :: IORef DrawMode
-        ,matrix_stack :: IORef [L.M44 GL.GLfloat]
-        ,camera       :: IORef Camera
+--         draw_color   :: IORef DrawColor
+--        ,draw_mode    :: IORef DrawMode
+        matrix_stack :: IORef [L.M44 GL.GLfloat]
+--        ,camera       :: IORef Camera
     }
 
 emptyMatrix = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 0 0 0
@@ -102,18 +102,18 @@ modifyActiveMatrix rn mat = do
 clearMatrixStack :: GraphicState -> IO ()
 clearMatrixStack gs = writeIORef (matrix_stack gs) $ [emptyMatrix]
 
-pushMatrix :: GraphicState -> IO ()
-pushMatrix gs = do
+pushMatrix :: HydraState -> IO ()
+pushMatrix state = do
     modifyIORef stack (push emptyMatrix)
     where
-        stack = matrix_stack gs
+        stack = matrix_stack $ graphic_state $ nodes state
         push val list = val:list
 
-popMatrix :: GraphicState -> IO ()
-popMatrix gs = do
+popMatrix :: HydraState -> IO ()
+popMatrix state = do
     modifyIORef stack tail
     where
-        stack = matrix_stack gs
+        stack = matrix_stack $ graphic_state $ nodes state
 
 defaultGraphicState :: IO GraphicState
 defaultGraphicState = do
@@ -121,7 +121,8 @@ defaultGraphicState = do
         m <- newIORef $ Stroke
         mat <- newIORef $ [emptyMatrix]
         cam <- newIORef defaultCamera
-        return $ GraphicState c m mat cam 
+--        return $ GraphicState c m mat cam 
+        return $ GraphicState mat 
 
 colorToFloatList :: DrawColor -> [GL.GLfloat]
 colorToFloatList c = [r c,g c,b c,a c]

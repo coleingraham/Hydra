@@ -74,7 +74,7 @@ drawNode state = do
         l    = lua_state node
 
 --------------------------------
-
+{-
 color :: HydraState -> Double -> Double -> Double -> Double -> IO ()
 color state r g b a = do
     writeIORef (draw_color $ graphic_state node) $ DrawColor rr gg bb aa
@@ -84,7 +84,7 @@ color state r g b a = do
         gg = realToFrac g :: GLfloat
         bb = realToFrac b :: GLfloat
         aa = realToFrac a :: GLfloat
-
+-}
 background :: Double -> Double -> Double -> Double -> IO ()
 background r g b a = do
     GL.clearColor $= GL.Color4 rr gg bb aa
@@ -144,7 +144,7 @@ scale state x y z = do
         xx = realToFrac x :: GLfloat
         yy = realToFrac y :: GLfloat
         zz = realToFrac z :: GLfloat
-
+{-
 cameraLocation :: HydraState -> Double -> Double -> Double -> IO ()
 cameraLocation state x y z = do
     c <- readIORef $ camera gs
@@ -179,7 +179,7 @@ cameraRoll state r = do
     where
         gs  = graphic_state $ nodes state
         rr  = realToFrac r :: GL.GLfloat
-
+-}
 cameraView :: Camera -> Int -> Int -> L.M44 GL.GLfloat
 cameraView c width height = projection L.!*! view
     where
@@ -187,7 +187,7 @@ cameraView c width height = projection L.!*! view
         projection = U.projectionMatrix (pi/4) aspect 0.1 10
         cam        = U.pan (pan c) . U.roll (roll c)  .  U.tilt (tilt c) . U.dolly (location c) $ U.fpsCamera
         view       = U.camMatrix cam
-
+{-
 stroke :: HydraState -> IO ()
 stroke state = do
     writeIORef mode Stroke
@@ -199,7 +199,7 @@ fill state = do
     writeIORef mode Fill
     where
         mode = draw_mode $ graphic_state $ nodes state
-
+-}
 drawThing :: HydraState -> GL.PrimitiveMode -> GL.NumArrayIndices -> V.Vector Float -> IO ()
 drawThing state mode num vertices = do
     t <- maybe 0 id <$> GLFW.getTime
