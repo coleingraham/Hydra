@@ -55,3 +55,9 @@ function Color:hsla(h,s,l,a)
 
   return Color:new(r,g,b,a)
 end
+
+-- sets the background color of the window
+function background(...)
+    local c = Color:new(...)
+    backgroundRGBA(c.r,c.g,c.b,c.a)
+end

@@ -1,3 +1,6 @@
+-----------------------------
+---------- Imports ----------
+-----------------------------
 
 import "lib/Color"
 import "lib/Vec"
@@ -8,22 +11,22 @@ import "lib/Camera"
 -----------------------------
 
 _HYDRA = {} -- global namespace
-_HYDRA.TIMEFUNCTIONS = {}
-_HYDRA.rt = 0      -- rt is the run time in fractions of a second of the program
-_HYDRA.last_rt = 0 -- the run time value for the previous frame (used to calculate dt)
-_HYDRA.dt = 0      -- dt is the delta between frames
-_HYDRA.draw_mode = "stroke"
-_HYDRA.draw_color = Color:new(0)
-_HYDRA.camera = Camera:new()
+_HYDRA.TIMEFUNCTIONS = {}           -- hold all functions that update over time
+_HYDRA.OSCDEFS       = {}           -- hold all OSCdefs
+_HYDRA.rt            = 0            -- rt is the run time in fractions of a second of the program
+_HYDRA.last_rt       = 0            -- the run time value for the previous frame (used to calculate dt)
+_HYDRA.dt            = 0            -- dt is the delta between frames
+_HYDRA.draw_mode     = "stroke"
+_HYDRA.draw_color    = Color:new(0)
+_HYDRA.camera        = Camera:new()
 
--- init the draw function
-function draw() end
+function draw() end -- init the draw function
 
 PI = math.pi
 TWO_PI = math.pi * 2
 
 -- set the value of the supplied global vairable
-function setfield(f, v)
+function _setfield(f, v)
     local t = _G    -- start with the table of globals
     for w, d in string.gfind(f, "([%w_]+)(.?)") do
         if d == "." then      -- not last field?
@@ -36,7 +39,7 @@ function setfield(f, v)
 end
 
 -- return the value of the supplied global vairable
-function getfield(f)
+function _getfield(f)
     local v = _G    -- start with the table of globals
     for w in string.gfind(f, "[%w_]+") do
         v = v[w]
@@ -51,7 +54,7 @@ function ramp(varname,start,finish,duration)
     
     local func = function ()
         if rt < (start_time + duration) then
-            setfield(varname,linlin(rt,start_time,start_time+duration,start,finish))
+            _setfield(varname,linlin(rt,start_time,start_time+duration,start,finish))
             return true
         else
             return false
@@ -69,7 +72,7 @@ function rampTo(varname,finish,duration)
     
     local func = function ()
         if rt < (start_time + duration) then
-            setfield(varname,linlin(rt,start_time,start_time+duration,start,finish))
+            _setfield(varname,linlin(rt,start_time,start_time+duration,start,finish))
             return true
         else
             return false
@@ -115,26 +118,7 @@ function cameraRoll(r)
     _HYDRA.camera.roll = r
 end
 
---- private ---
-
-function _updateTimeFunctions()
-    for k,f in pairs(_HYDRA.TIMEFUNCTIONS) do
-        local status = f()
-        if not status then    -- thread finished its task?
-            _HYDRA.TIMEFUNCTIONS[k] = nil
-        end
-    end
-end
-
-function _update(time)
-    _HYDRA.rt = time
-    _HYDRA.dt = _HYDRA.rt - last_rt
-    _HYDRA.last_rt = _HYDRA.rt
-
-    _updateTimeFunctions()
-end
-
----------- OSC ----------
+--- OSC ---
 
 OSCDEFS = {}
 
@@ -154,16 +138,23 @@ function OSCdef(name,address,func)
     OSCDEFS[address][name] = func
 end
 
----------- Window Control ----------
+--- private ---
 
-function displayWidth(i)
-    i = i or 0
-    return displayWidthI(i)
+function _updateTimeFunctions()
+    for k,f in pairs(_HYDRA.TIMEFUNCTIONS) do
+        local status = f()
+        if not status then    -- thread finished its task?
+            _HYDRA.TIMEFUNCTIONS[k] = nil
+        end
+    end
 end
 
-function displayHeight(i)
-    i = i or 0
-    return displayHeightI(i)
+function _update(time)
+    _HYDRA.rt = time
+    _HYDRA.dt = _HYDRA.rt - last_rt
+    _HYDRA.last_rt = _HYDRA.rt
+
+    _updateTimeFunctions()
 end
 
 ---------- Transformations ----------
@@ -189,11 +180,6 @@ end
 
 ---------- Color ----------
 
-function background(...)
-    local c = Color:new(...)
-    backgroundRGBA(c.r,c.g,c.b,c.a)
-end
-
 function color(...)
     _HYDRA.draw_color = Color:new(...)
 end
@@ -208,66 +194,9 @@ function fill()
     _HYDRA.draw_mode = "fill"
 end
 
----------- Lua/Haskell Utilities ----------
-
--- get values and errors from Haskell
-_HASKELLERR = {}
-
-function catch_haskell(ret, err_msg)
-    if ret == _HASKELLERR then
-      -- `error` call adds a prefix to error message
-      error(err_msg)
-    end
-    return ret
-end
-
--- support for function overloading
-function overloaded()
-    local fns = {}
-    local mt = {}
-    
-    local function oerror()
-        return error("Invalid argument types to overloaded function")
-    end
-    
-    function mt:__call(...)
-        local arg = {...}
-        local default = self.default
-        
-        local signature = {}
-        for i,arg in ipairs {...} do
-            signature[i] = type(arg)
-        end
-        
-        signature = table.concat(signature, ",")
-        
-        return (fns[signature] or self.default)(...)
-    end
-    
-    function mt:__index(key)
-        local signature = {}
-        local function __newindex(self, key, value)
-            print(key, type(key), value, type(value))
-            signature[#signature+1] = key
-            fns[table.concat(signature, ",")] = value
-            print("bind", table.concat(signature, ", "))
-        end
-        local function __index(self, key)
-            print("I", key, type(key))
-            signature[#signature+1] = key
-            return setmetatable({}, { __index = __index, __newindex = __newindex })
-        end
-        return __index(self, key)
-    end
-    
-    function mt:__newindex(key, value)
-        fns[key] = value
-    end
-    
-    return setmetatable({ default = oerror }, mt)
-end
-
 ---------- Utility Functions ----------
+
+--- Random ---
 
 function randSeed(seed)
     math.randomseed(seed)
@@ -294,6 +223,8 @@ function choose(array)
     local n = #array
     return array[randI(n)]
 end
+
+--- number remapping ---
 
 -- SuperCollider's linear to linear remapping
 function linlin(x,a,b,c,d)

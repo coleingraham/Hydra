@@ -1,0 +1,11 @@
+---------- Window Control ----------
+
+function displayWidth(i)
+    i = i or 0
+    return displayWidthI(i)
+end
+
+function displayHeight(i)
+    i = i or 0
+    return displayHeightI(i)
+end
