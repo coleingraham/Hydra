@@ -73,11 +73,6 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "stroke" (stroke hs)
     Lua.registerhsfunction l "fill"   (fill hs)
 
-    Lua.registerhsfunction l "cameraLocation" (cameraLocation hs)
-    Lua.registerhsfunction l "cameraPan"      (cameraPan hs)
-    Lua.registerhsfunction l "cameraTilt"     (cameraTilt hs)
-    Lua.registerhsfunction l "cameraRoll"     (cameraRoll hs)
-    
     Lua.registerhsfunction l "pushMatrix" (pushMatrix (graphic_state rn))
     Lua.registerhsfunction l "popMatrix"  (popMatrix (graphic_state rn))
 

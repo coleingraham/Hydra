@@ -206,11 +206,12 @@ drawThing state mode num vertices = do
     (width, height) <- GLFW.getFramebufferSize $ window state
 
     stack <- readIORef $ matrix_stack $ graphic_state rn
-    cam <- readIORef $ camera $ graphic_state rn
+--    cam <- readIORef $ camera $ graphic_state rn
+    cam <- get_camera $ lua_state rn
     let mvp = (cameraView cam width height) L.!*! (flattenMatrix stack)
     U.asUniform mvp $ U.getUniform (shader_program rn) "mvp"
 
-    clist <- getVertexColorList rn (V.length vertices)
+    clist <- getVertexColorList state (V.length vertices)
     let colors = V.fromList clist
     V.unsafeWith colors $ \ptr -> do
             GL.vertexAttribPointer (U.getAttrib (shader_program rn) "v_color") $=
@@ -239,10 +240,9 @@ drawTriangle :: HydraState ->
     Double -> Double -> Double ->
     Double -> Double -> Double -> IO ()
 drawTriangle state x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
-    dmode <- readIORef mode
+    dmode <- get_draw_mode $ lua_state $ nodes state 
     drawThing state (whichMode dmode) 3 vertices
     where
-        mode        = draw_mode $ graphic_state $ nodes state
         whichMode m = case m of
                        Fill   -> GL.Triangles 
                        Stroke -> GL.LineLoop
@@ -253,10 +253,9 @@ drawTriangle state x1 y1 z1 x2 y2 z2 x3 y3 z3 = do
 
 drawRectangle :: HydraState -> Double -> Double -> IO ()
 drawRectangle state width height = do
-    dmode <- readIORef mode
+    dmode <- get_draw_mode $ lua_state $ nodes state 
     drawThing state (whichMode dmode) 4 vertices
     where
-        mode        = draw_mode $ graphic_state $ nodes state
         whichMode m = case m of
                        Fill   -> GL.Quads 
                        Stroke -> GL.LineLoop 
@@ -273,10 +272,9 @@ drawRectangle state width height = do
 
 drawDisk :: HydraState -> Double -> Double -> IO ()
 drawDisk state num rad = do
-    dmode <- readIORef mode
+    dmode <- get_draw_mode $ lua_state $ nodes state 
     drawThing state (whichMode dmode) (floor n) vertices
     where
-        mode        = draw_mode $ graphic_state $ nodes state
         whichMode m = case m of
                        Fill   -> GL.TriangleFan
                        Stroke -> GL.LineLoop 
@@ -290,14 +288,13 @@ drawDisk state num rad = do
 
 drawRing :: HydraState -> Double -> Double -> Double -> IO ()
 drawRing state num rad thick = do
-    dmode <- readIORef mode
+    dmode <- get_draw_mode $ lua_state $ nodes state 
     case dmode of
         Fill   -> drawThing state GL.QuadStrip (floor (n*2+2)) vertices
         Stroke -> do
                   drawDisk state num (rad + hthick)
                   drawDisk state num (rad - hthick)
     where
-        mode        = draw_mode $ graphic_state $ nodes state
         hthick   = thick / 2
         n        = realToFrac $ floor num :: Double
         f fn r   = map (* r) $ map fn $ map (*(pi*2)) $ map (/n) [0..(n+1)]
