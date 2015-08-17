@@ -47,6 +47,16 @@ function _getfield(f)
     return v
 end
 
+function displayWidth(i)
+    i = i or 0
+    return displayWidthI(i)
+end
+
+function displayHeight(i)
+    i = i or 0
+    return displayHeightI(i)
+end
+
 -- linear interpolation from a start value to an end value over
 -- a period of time
 function ramp(varname,start,finish,duration)

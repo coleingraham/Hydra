@@ -124,6 +124,11 @@ options = [
 
 main :: IO ()
 main = do
+    win <- W.initialize "Hydra"
+    node <- initResources
+    let state = HydraState win node
+    registerLuaFunctions state
+
     args <- getArgs
     let (actions, nonOptions, errors) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return defaultOptions) actions
@@ -131,11 +136,6 @@ main = do
           optPort = port
         , optSettings = settings
         } = opts
-    
-    win <- W.initialize "Hydra"
-    node <- initResources
-    let state = HydraState win node
-    registerLuaFunctions state
     
     let p = optPort opts
     putStrLn $ "Hydra: listening on port " ++ (show p)
