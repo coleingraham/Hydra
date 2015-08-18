@@ -16,9 +16,11 @@ _HYDRA.OSCDEFS       = {}           -- hold all OSCdefs
 _HYDRA.rt            = 0            -- rt is the run time in fractions of a second of the program
 _HYDRA.last_rt       = 0            -- the run time value for the previous frame (used to calculate dt)
 _HYDRA.dt            = 0            -- dt is the delta between frames
-_HYDRA.draw_mode     = "stroke"
+_HYDRA.draw_mode     = STROKE
 _HYDRA.draw_color    = Color:new(0)
 _HYDRA.camera        = Camera:new()
+_HYDRA._STROKE = 0
+_HYDRA._FILL = 1
 
 function draw() end -- init the draw function
 
@@ -55,6 +57,16 @@ end
 function displayHeight(i)
     i = i or 0
     return displayHeightI(i)
+end
+
+function displayX(i)
+    i = i or 0
+    return displayXI(i)
+end
+
+function displayY(i)
+    i = i or 0
+    return displayYI(i)
 end
 
 -- linear interpolation from a start value to an end value over
@@ -168,14 +180,23 @@ function _update(time)
 end
 
 ---------- Transformations ----------
-
--- allow for one or two value scaling
-function scale(x,y,z)
-    y = y or x
-    z = z or y
-    scaleXYZ(x,y,z)
+---[[
+function translate(one,two,three)
+    if type(one) == "table" then translateXYZ(one.x,one.y,one.z)
+    else translateXYZ(one,two,three) end
 end
 
+function rotate(one,two,three)
+    if type(one) == "table" then rotateXYZ(one.x,one.y,one.z)
+    else rotateXYZ(one,two,three) end
+end
+
+-- allow for one or two value scaling
+function scale(one,two,three)
+    if type(one) == "table" then scaleXYZ(one.x,one.y,one.z)
+    else scaleXYZ(one,two,three) end
+end
+--]]
 function scaleX(x)
     scaleXYZ(x,1,1)
 end
@@ -197,11 +218,11 @@ end
 ---------- Draw Mode ----------
 
 function stroke()
-    _HYDRA.draw_mode = "stroke"
+    _HYDRA.draw_mode = _HYDRA._STROKE
 end
 
 function fill()
-    _HYDRA.draw_mode = "fill"
+    _HYDRA.draw_mode = _HYDRA._FILL
 end
 
 ---------- Utility Functions ----------

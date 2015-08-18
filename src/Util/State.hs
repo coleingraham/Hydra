@@ -35,10 +35,10 @@ data DrawMode = Stroke | Fill deriving (Eq)
 get_draw_mode :: Lua.LuaState -> IO DrawMode
 get_draw_mode l = do
     Lua.getglobal l "_HYDRA"
-    mode <- get_string l "draw_mode"
+    mode <- get_num l "draw_mode"
     case mode of
-        "stroke" -> return Stroke
-        "fill"   -> return Fill
+        0 -> return Stroke
+        1 -> return Fill
 
 data Camera = Camera {
          location :: L.V3 GL.GLfloat

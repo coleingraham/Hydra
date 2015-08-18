@@ -75,19 +75,19 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "pushMatrix" (pushMatrix hs)
     Lua.registerhsfunction l "popMatrix"  (popMatrix hs)
 
-    Lua.registerhsfunction l "translate" (translate hs)
-    Lua.registerhsfunction l "rotate"    (rotate hs)
-    Lua.registerhsfunction l "rotateX"   (rotateX hs)
-    Lua.registerhsfunction l "rotateY"   (rotateY hs)
-    Lua.registerhsfunction l "rotateZ"   (rotateZ hs)
-    Lua.registerhsfunction l "scaleXYZ"  (scale hs)
+    Lua.registerhsfunction l "translateXYZ" (translate hs)
+    Lua.registerhsfunction l "rotateXYZ"    (rotate hs)
+    Lua.registerhsfunction l "rotateX"      (rotateX hs)
+    Lua.registerhsfunction l "rotateY"      (rotateY hs)
+    Lua.registerhsfunction l "rotateZ"      (rotateZ hs)
+    Lua.registerhsfunction l "scaleXYZ"     (scale hs)
 
     Lua.registerhsfunction l "setWindowPosition" (GLFW.setWindowPos $ window hs)
     Lua.registerhsfunction l "setWindowSize"     (GLFW.setWindowSize $ window hs)
     Lua.registerhsfunction l "displayWidthI"     displayWidth
     Lua.registerhsfunction l "displayHeightI"    displayHeight
-    Lua.registerhsfunction l "displayX"          displayX
-    Lua.registerhsfunction l "displayY"          displayY
+    Lua.registerhsfunction l "displayXI"         displayX
+    Lua.registerhsfunction l "displayYI"         displayY
 
     Lua.registerhsfunction l "import" (import_file hs)
     

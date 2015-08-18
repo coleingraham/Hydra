@@ -32,3 +32,5 @@ by selecting it (easiest is with `<shift>-v`) and pressing `<leader>h`
 There is currently no documentation. Some of the functions are defined in the Haskell source, while others are in lib/libHydra.hydra if you are interested.
 
 NOTE: this project is very new and will be in flux for quite a long time. Bear with me...
+
+I have been running into a bug with hslua `hsmethod__call` function failing, which causes a crash. While you can use the current hackage version (0.4.0), I am building agains a version I've patched to fix this crash.
