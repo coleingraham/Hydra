@@ -2,6 +2,7 @@
 
 module Main where
 
+import           Control.Concurrent.STM     (TQueue, atomically, newTQueueIO, tryReadTQueue, writeTQueue)
 import           Control.Concurrent
 import           Control.Monad
 import qualified Data.ByteString as BS
@@ -62,6 +63,16 @@ displayY index = do
             pos <- GLFW.getMonitorPos m
             return $ snd $ pos
 
+windowX :: HydraState -> IO Int
+windowX state = do
+    (x,y) <- GLFW.getWindowPos $ window state
+    return x
+
+windowY :: HydraState -> IO Int
+windowY state = do
+    (x,y) <- GLFW.getWindowPos $ window state
+    return y
+
 registerLuaFunctions :: HydraState -> IO ()
 registerLuaFunctions hs = do
     Lua.registerhsfunction l "backgroundRGBA" background
@@ -88,6 +99,8 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "displayHeightI"    displayHeight
     Lua.registerhsfunction l "displayXI"         displayX
     Lua.registerhsfunction l "displayYI"         displayY
+    Lua.registerhsfunction l "windowX"           (windowX hs)
+    Lua.registerhsfunction l "windowY"           (windowY hs)
 
     Lua.registerhsfunction l "import" (import_file hs)
     
@@ -124,9 +137,26 @@ options = [
 
 main :: IO ()
 main = do
-    win <- W.initialize "Hydra"
+    eventsChan <- newTQueueIO :: IO (TQueue Event)
+
+    win <- W.withWindow 640 480 "Hydra" $ \win -> do
+        GLFW.setErrorCallback               $ Just $ W.errorCallback           eventsChan
+--        GLFW.setWindowPosCallback       win $ Just $ W.windowPosCallback       eventsChan
+--        GLFW.setWindowSizeCallback      win $ Just $ W.windowSizeCallback      eventsChan
+--        GLFW.setWindowCloseCallback     win $ Just $ W.windowCloseCallback     eventsChan
+--        GLFW.setWindowRefreshCallback   win $ Just $ W.windowRefreshCallback   eventsChan
+--        GLFW.setWindowFocusCallback     win $ Just $ W.windowFocusCallback     eventsChan
+--        GLFW.setWindowIconifyCallback   win $ Just $ W.windowIconifyCallback   eventsChan
+--        GLFW.setFramebufferSizeCallback win $ Just $ W.framebufferSizeCallback eventsChan
+        GLFW.setMouseButtonCallback     win $ Just $ W.mouseButtonCallback     eventsChan
+        GLFW.setCursorPosCallback       win $ Just $ W.cursorPosCallback       eventsChan
+        GLFW.setCursorEnterCallback     win $ Just $ W.cursorEnterCallback     eventsChan
+        GLFW.setScrollCallback          win $ Just $ W.scrollCallback          eventsChan
+        GLFW.setKeyCallback             win $ Just $ W.keyCallback             eventsChan
+        GLFW.setCharCallback            win $ Just $ W.charCallback            eventsChan
+
     node <- initResources
-    let state = HydraState win node
+    let state = HydraState win node eventsChan
     registerLuaFunctions state
 
     args <- getArgs

@@ -48,6 +48,7 @@ initResources = do
 draw :: HydraState -> IO ()
 draw state = do
     (width, height) <- GLFW.getFramebufferSize $ window state
+    W.processEvents state
     GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral width) (fromIntegral height))
     drawNode state
 
@@ -307,3 +308,5 @@ drawRing state num rad thick = do
         inner    = zip3 xs2 ys2 zs
         list     = concatMap (\((x1,y1,z1),(x2,y2,z2)) -> [x1,y1,z1,x2,y2,z2]) $ zip outer inner
         vertices = V.fromList $ map realToFrac list :: V.Vector Float
+
+
