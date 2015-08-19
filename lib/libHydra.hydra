@@ -17,8 +17,8 @@ _HYDRA.rt            = 0            -- rt is the run time in fractions of a seco
 _HYDRA.last_rt       = 0            -- the run time value for the previous frame (used to calculate dt)
 _HYDRA.dt            = 0            -- dt is the delta between frames
 _HYDRA.draw_mode     = STROKE
-_HYDRA.draw_color    = Color:new(0)
-_HYDRA.camera        = Camera:new()
+_HYDRA.draw_color    = Color:new(1)
+_HYDRA.camera        = Camera:new(Vec:new(0,0,2))
 _HYDRA._STROKE = 0
 _HYDRA._FILL = 1
 
@@ -49,24 +49,35 @@ function _getfield(f)
     return v
 end
 
+-- get the width of display number i
 function displayWidth(i)
     i = i or 0
     return displayWidthI(i)
 end
 
+-- get the height of display number i
 function displayHeight(i)
     i = i or 0
     return displayHeightI(i)
 end
 
+-- get the left coordinate of display number i
 function displayX(i)
     i = i or 0
     return displayXI(i)
 end
 
+-- get the top coordinate of display number i
 function displayY(i)
     i = i or 0
     return displayYI(i)
+end
+
+-- set the window to the top, left, width, and height of display number i
+function maximize(i)
+    i = i or 0
+    setWindowSize(displayWidth(i),displayHeight(i))
+    setWindowPosition(displayX(i),displayY(i))
 end
 
 -- linear interpolation from a start value to an end value over
