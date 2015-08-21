@@ -114,7 +114,7 @@ import_file state name = do
 emptyMatrix = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 0 0 0
 
 flattenMatrix :: [L.M44 GL.GLfloat] -> L.M44 GL.GLfloat
-flattenMatrix stack = foldl (\acc x -> acc L.!*! x) emptyMatrix stack
+flattenMatrix stack = foldl (\acc x -> acc L.!*! x) emptyMatrix $ reverse stack
 
 modifyActiveMatrix :: RenderNode -> L.M44 GL.GLfloat -> IO ()
 modifyActiveMatrix rn mat = do
@@ -130,7 +130,7 @@ clearMatrixStack gs = writeIORef (matrix_stack gs) $ [emptyMatrix]
 
 pushMatrix :: HydraState -> IO ()
 pushMatrix state = do
-    modifyIORef stack (push emptyMatrix)
+    modifyIORef stack $ push emptyMatrix
     where
         stack = matrix_stack $ graphic_state $ nodes state
         push val list = val:list

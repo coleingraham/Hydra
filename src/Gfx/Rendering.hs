@@ -239,6 +239,19 @@ drawLine state x1 y1 z1 x2 y2 z2 = do
                               ,  realToFrac x2, realToFrac y2, realToFrac z2
                               ] :: V.Vector Float
 
+unitLineArrtib :: GL.AttribLocation
+unitLineArrtib = GL.AttribLocation 0
+unitLineArrayVerts :: V.Vector Float
+unitLineArrayVerts  = V.fromList [ 0, 0, 0, 1, 1, 1 ] :: V.Vector Float
+unitLineArrayColors :: V.Vector Float
+unitLineArrayColors  = V.fromList [ 1, 1, 1, 1, 1, 1, 1, 1 ] :: V.Vector Float
+
+drawLine' :: HydraState -> 
+    Double -> Double -> Double ->
+    Double -> Double -> Double -> IO ()
+drawLine' state x1 y1 z1 x2 y2 z2 = undefined
+    
+
 drawTriangle :: HydraState -> 
     Double -> Double -> Double ->
     Double -> Double -> Double ->
