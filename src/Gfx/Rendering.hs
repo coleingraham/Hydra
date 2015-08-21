@@ -96,6 +96,9 @@ background r g b a = do
         bb = realToFrac b :: GLfloat
         aa = realToFrac a :: GLfloat
 
+depthClear :: IO ()
+depthClear = GL.clear [GL.DepthBuffer]
+
 translate :: HydraState -> Double -> Double -> Double -> IO ()
 translate state x y z = do
     let mat = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 xx yy zz

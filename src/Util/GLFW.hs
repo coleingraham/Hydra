@@ -10,22 +10,6 @@ import           System.Exit
 import           System.IO
 import           Util.State
 
-data State = State
-    { stateWindowWidth     :: !Int
-    , stateWindowHeight    :: !Int
-    , stateXAngle          :: !Double
-    , stateYAngle          :: !Double
-    , stateZAngle          :: !Double
-    , stateGearZAngle      :: !Double
-    , stateZDist           :: !Double
-    , stateMouseDown       :: !Bool
-    , stateDragging        :: !Bool
-    , stateDragStartX      :: !Double
-    , stateDragStartY      :: !Double
-    , stateDragStartXAngle :: !Double
-    , stateDragStartYAngle :: !Double
-    }
-
 -- Each callback does just one thing: write an appropriate Event to the events
 -- TQueue.
 
@@ -94,7 +78,6 @@ withWindow width height title f = do
               GLFW.makeContextCurrent m
               f win
               GLFW.setErrorCallback $ Just simpleErrorCallback
---              GLFW.destroyWindow win
               return win
           Nothing -> GLFW.terminate >> exitFailure
     where
@@ -200,8 +183,3 @@ showModifierKeys mk =
          , if GLFW.modifierKeysSuper   mk then Just "super"   else Nothing
          ]
 
-curb :: Ord a => a -> a -> a -> a
-curb l h x
-  | x < l     = l
-  | x > h     = h
-  | otherwise = x

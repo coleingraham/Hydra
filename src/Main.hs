@@ -76,6 +76,7 @@ windowY state = do
 registerLuaFunctions :: HydraState -> IO ()
 registerLuaFunctions hs = do
     Lua.registerhsfunction l "backgroundRGBA" background
+    Lua.registerhsfunction l "depthClear"     depthClear 
 --    Lua.registerhsfunction l "colorRGBA"      (color hs)
     Lua.registerhsfunction l "line"           (drawLine hs)
     Lua.registerhsfunction l "triangle"       (drawTriangle hs)
@@ -113,12 +114,16 @@ registerLuaFunctions hs = do
 data Options = Options {
      optPort     :: Int
     ,optSettings :: String
+    ,optWidth    :: Int
+    ,optHeight   :: Int
     }
 
 defaultOptions :: Options
 defaultOptions = Options {
      optPort     = 57150
     ,optSettings = ""
+    ,optWidth    = 640
+    ,optHeight   = 480
     }
 
 options :: [OptDescr (Options -> IO Options)]
@@ -133,13 +138,37 @@ options = [
                     (\arg opt -> return opt {optSettings = arg})
                     "FILE")
                 "load settings file"
+          , Option "w" ["width"]
+                (ReqArg
+                    (\arg opt -> return opt {optWidth = read arg})
+                    "WIDTH")
+                "set initial window width"
+          , Option "h" ["height"]
+                (ReqArg
+                    (\arg opt -> return opt {optHeight = read arg})
+                    "HEIGHT")
+                "set initial window height"
           ]
 
 main :: IO ()
 main = do
+
+    args <- getArgs
+    let (actions, nonOptions, errors) = getOpt RequireOrder options args
+    opts <- foldl (>>=) (return defaultOptions) actions
+    let Options {
+          optPort     = port
+        , optSettings = settings
+        , optWidth    = width
+        , optHeight   = height
+        } = opts
+    
     eventsChan <- newTQueueIO :: IO (TQueue Event)
 
-    win <- W.withWindow 640 480 "Hydra" $ \win -> do
+    let w = optWidth opts
+    let h = optHeight opts
+    putStrLn $ "Hydra: resolution " ++ (show w) ++ " x " ++ (show h)
+    win <- W.withWindow w h "Hydra" $ \win -> do
         GLFW.setErrorCallback               $ Just $ W.errorCallback           eventsChan
 --        GLFW.setWindowPosCallback       win $ Just $ W.windowPosCallback       eventsChan
 --        GLFW.setWindowSizeCallback      win $ Just $ W.windowSizeCallback      eventsChan
@@ -159,14 +188,6 @@ main = do
     let state = HydraState win node eventsChan
     registerLuaFunctions state
 
-    args <- getArgs
-    let (actions, nonOptions, errors) = getOpt RequireOrder options args
-    opts <- foldl (>>=) (return defaultOptions) actions
-    let Options {
-          optPort = port
-        , optSettings = settings
-        } = opts
-    
     let p = optPort opts
     putStrLn $ "Hydra: listening on port " ++ (show p)
     server <- createOscServer p $ receiveFunc $ state
