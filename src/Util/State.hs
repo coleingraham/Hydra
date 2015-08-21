@@ -114,7 +114,7 @@ import_file state name = do
 emptyMatrix = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 0 0 0
 
 flattenMatrix :: [L.M44 GL.GLfloat] -> L.M44 GL.GLfloat
-flattenMatrix stack = foldl (\acc x -> acc L.!*! x) emptyMatrix $ reverse stack
+flattenMatrix stack = foldl (\acc x -> x L.!*! acc) emptyMatrix stack
 
 modifyActiveMatrix :: RenderNode -> L.M44 GL.GLfloat -> IO ()
 modifyActiveMatrix rn mat = do
