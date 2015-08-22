@@ -84,7 +84,6 @@ end
 -- a period of time
 function ramp(varname,start,finish,duration)
     local start_time = rt
-    
     local func = function ()
         if rt < (start_time + duration) then
             _setfield(varname,linlin(rt,start_time,start_time+duration,start,finish))
@@ -95,6 +94,7 @@ function ramp(varname,start,finish,duration)
     end
     
     _HYDRA.TIMEFUNCTIONS[varname] = func
+    print(_HYDRA.TIMEFUNCTIONS[varname])
 end
 
 -- linear interpolation from the current value to an end value over
@@ -176,6 +176,7 @@ end
 function _updateTimeFunctions()
     for k,f in pairs(_HYDRA.TIMEFUNCTIONS) do
         local status = f()
+        print(k)
         if not status then    -- thread finished its task?
             _HYDRA.TIMEFUNCTIONS[k] = nil
         end
@@ -184,7 +185,7 @@ end
 
 function _update(time)
     _HYDRA.rt = time
-    _HYDRA.dt = _HYDRA.rt - last_rt
+    _HYDRA.dt = _HYDRA.rt - _HYDRA.last_rt
     _HYDRA.last_rt = _HYDRA.rt
 
     _updateTimeFunctions()
