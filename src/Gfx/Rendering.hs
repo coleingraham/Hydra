@@ -57,7 +57,7 @@ drawNode state = do
     clearMatrixStack $ graphic_state node
     GL.currentProgram $= (Just . U.program . shader_program $ node)
     U.enableAttrib (shader_program node) "coord3d"
-    U.enableAttrib (shader_program node) "v_color"
+--    U.enableAttrib (shader_program node) "v_color"
     t <- maybe 0 id <$> GLFW.getTime
     Lua.getglobal l "_update"
     Lua.pushnumber l $ realToFrac t
@@ -67,7 +67,7 @@ drawNode state = do
     draw_result <- Lua.pcall l 0 0 0
 --    (if draw_result /= 0 then print $ "Draw Error: " ++ (show $ Lua.tostring l (-1)) )
     GL.vertexAttribArray (U.getAttrib (shader_program node) "coord3d") $= GL.Disabled
-    GL.vertexAttribArray (U.getAttrib (shader_program node) "v_color") $= GL.Disabled
+--    GL.vertexAttribArray (U.getAttrib (shader_program node) "v_color") $= GL.Disabled
     return ()
     where
         node = nodes state
@@ -215,12 +215,17 @@ drawThing state mode num vertices = do
     let mvp = (cameraView cam width height) L.!*! (flattenMatrix stack)
     U.asUniform mvp $ U.getUniform (shader_program rn) "mvp"
 
+    dc <- get_draw_color $ lua_state rn
+    let c = L.V4 (r dc) (g dc) (b dc) (a dc)
+    U.asUniform c $ U.getUniform (shader_program rn) "v_color"
+            
+{-
     clist <- getVertexColorList state (V.length vertices)
     let colors = V.fromList clist
     V.unsafeWith colors $ \ptr -> do
             GL.vertexAttribPointer (U.getAttrib (shader_program rn) "v_color") $=
                 (GL.ToFloat, GL.VertexArrayDescriptor 4 GL.Float 0 ptr)
-
+-}
     V.unsafeWith vertices $ \ptr ->
         GL.vertexAttribPointer (U.getAttrib (shader_program rn) "coord3d") $=
           (GL.ToFloat, GL.VertexArrayDescriptor 3 GL.Float 0 ptr)
