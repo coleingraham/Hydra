@@ -1,0 +1,44 @@
+--[[
+
+libBlender for Hydra
+
+For the moment at least, this does nothing directly with Blender itself. This library
+is meant to mirror how Blender handles its assets.
+
+--]]
+
+Blender = {
+     world     = {} -- instance of Blender.World
+    ,objects   = {} -- all objects
+    ,meshes    = {} -- all meshes
+    ,materials = {} -- all materials
+    ,textures  = {} -- all textures
+}
+
+function Blender:new() 
+    b = {}
+    b.world = Blender.World:new(b)
+    setmetatable(b,self)
+    self.__index = self
+    return b
+end
+
+Blender.World = {
+     blender    = {}
+    ,background = background(0)
+    ,camera     = Camera:new()
+    ,objects    = {}
+    ,show       = function ()
+        for _,objName in pairs(objects) do
+            -- blender.objects[objName].show()
+        end
+    end
+}
+
+function Blender.World:new(b)
+    w = { blender = b }
+    setmetatable(w,self)
+    self.__index = self
+    return w
+end
+
