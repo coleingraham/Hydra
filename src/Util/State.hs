@@ -95,6 +95,7 @@ data GraphicState = GraphicState {
 --        ,draw_mode    :: IORef DrawMode
         matrix_stack :: IORef [L.M44 GL.GLfloat]
 --        ,camera       :: IORef Camera
+--          ,primVBO      :: GL.BufferObject 
     }
 
 import_file :: HydraState -> BC.ByteString -> IO ()
@@ -111,6 +112,7 @@ import_file state name = do
                 return ()
         l = lua_state $ nodes state
 
+emptyMatrix :: L.M44 GL.GLfloat
 emptyMatrix = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 0 0 0
 
 flattenMatrix :: [L.M44 GL.GLfloat] -> L.M44 GL.GLfloat
@@ -140,13 +142,36 @@ popMatrix state = do
     modifyIORef stack tail
     where
         stack = matrix_stack $ graphic_state $ nodes state
+{-
+primLineIndex :: GL.ArrayIndex
+primLineIndex = 0
+primLineVerts :: GL.NumArrayIndices
+primLineVerts = 2
+primRectIndex :: GL.ArrayIndex
+primRectIndex = 2
+primRectVerts :: GL.NumArrayIndices
+primRectVerts = 4
 
+primitiveVerts :: [Float]
+primitiveVerts = [
+                      0.0,  0.0,  0.0 -- 0 line
+                   ,  1.0,  1.0,  1.0
+                   , -0.5, -0.5,  0.0 -- 2 rect
+                   ,  0.5, -0.5,  0.0
+                   ,  0.5,  0.5,  0.0
+                   , -0.5,  0.5,  0.0
+                 ]
+
+primitiveBuffer :: IO GL.BufferObject
+primitiveBuffer = U.makeBuffer GL.ArrayBuffer primitiveVerts
+-}
 defaultGraphicState :: IO GraphicState
 defaultGraphicState = do
-        c <- newIORef $ DrawColor 1 1 1 1
-        m <- newIORef $ Stroke
+--        c <- newIORef $ DrawColor 1 1 1 1
+--        m <- newIORef $ Stroke
         mat <- newIORef $ [emptyMatrix]
-        cam <- newIORef defaultCamera
+--        cam <- newIORef defaultCamera
+--        buf <- primitiveBuffer
 --        return $ GraphicState c m mat cam 
         return $ GraphicState mat 
 

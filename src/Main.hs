@@ -79,8 +79,10 @@ registerLuaFunctions hs = do
     Lua.registerhsfunction l "depthClear"     depthClear 
 --    Lua.registerhsfunction l "colorRGBA"      (color hs)
     Lua.registerhsfunction l "line"           (drawLine hs)
+--    Lua.registerhsfunction l "line2"          (drawPrimLine hs)
     Lua.registerhsfunction l "triangle"       (drawTriangle hs)
     Lua.registerhsfunction l "rect"           (drawRectangle hs)
+--    Lua.registerhsfunction l "rect2"          (drawPrimRect hs)
     Lua.registerhsfunction l "disk"           (drawDisk hs)
     Lua.registerhsfunction l "ring"           (drawRing hs)
 

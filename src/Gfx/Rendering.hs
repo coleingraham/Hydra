@@ -56,7 +56,6 @@ drawNode :: HydraState -> IO ()
 drawNode state = do
     clearMatrixStack $ graphic_state node
     GL.currentProgram $= (Just . U.program . shader_program $ node)
-    U.enableAttrib (shader_program node) "coord3d"
 --    U.enableAttrib (shader_program node) "v_color"
     t <- maybe 0 id <$> GLFW.getTime
     Lua.getglobal l "_update"
@@ -66,7 +65,6 @@ drawNode state = do
     Lua.getglobal l "draw"
     draw_result <- Lua.pcall l 0 0 0
 --    (if draw_result /= 0 then print $ "Draw Error: " ++ (show $ Lua.tostring l (-1)) )
-    GL.vertexAttribArray (U.getAttrib (shader_program node) "coord3d") $= GL.Disabled
 --    GL.vertexAttribArray (U.getAttrib (shader_program node) "v_color") $= GL.Disabled
     return ()
     where
@@ -206,9 +204,9 @@ fill state = do
 -}
 drawThing :: HydraState -> GL.PrimitiveMode -> GL.NumArrayIndices -> V.Vector Float -> IO ()
 drawThing state mode num vertices = do
-    t <- maybe 0 id <$> GLFW.getTime
     (width, height) <- GLFW.getFramebufferSize $ window state
 
+    U.enableAttrib (shader_program rn) "coord3d"
     stack <- readIORef $ matrix_stack $ graphic_state rn
 --    cam <- readIORef $ camera $ graphic_state rn
     cam <- get_camera $ lua_state rn
@@ -218,22 +216,65 @@ drawThing state mode num vertices = do
     dc <- get_draw_color $ lua_state rn
     let c = L.V4 (r dc) (g dc) (b dc) (a dc)
     U.asUniform c $ U.getUniform (shader_program rn) "v_color"
-            
-{-
-    clist <- getVertexColorList state (V.length vertices)
-    let colors = V.fromList clist
-    V.unsafeWith colors $ \ptr -> do
-            GL.vertexAttribPointer (U.getAttrib (shader_program rn) "v_color") $=
-                (GL.ToFloat, GL.VertexArrayDescriptor 4 GL.Float 0 ptr)
--}
+
     V.unsafeWith vertices $ \ptr ->
         GL.vertexAttribPointer (U.getAttrib (shader_program rn) "coord3d") $=
           (GL.ToFloat, GL.VertexArrayDescriptor 3 GL.Float 0 ptr)
 
     GL.drawArrays mode 0 num
+    GL.vertexAttribArray (U.getAttrib (shader_program rn) "coord3d") $= GL.Disabled
+    where
+        rn             = nodes state
+{-
+drawPrimitive :: HydraState -> L.M44 GL.GLfloat -> GL.PrimitiveMode -> GL.ArrayIndex -> GL.NumArrayIndices -> IO ()
+drawPrimitive state mat drawMode primIndex numVerts = do
+    (width, height) <- GLFW.getFramebufferSize $ window state
+
+    U.enableAttrib (shader_program rn) "coord3d"
+    stack <- readIORef $ matrix_stack $ graphic_state rn
+    cam <- get_camera $ lua_state rn
+    let mvp = (cameraView cam width height) L.!*! (flattenMatrix stack) L.!*! mat
+    U.asUniform mvp $ U.getUniform (shader_program rn) "mvp"
+
+    dc <- get_draw_color $ lua_state rn
+    let c = L.V4 (r dc) (g dc) (b dc) (a dc)
+    U.asUniform c $ U.getUniform (shader_program rn) "v_color"
+    
+    GL.bindBuffer GL.ArrayBuffer $= Just (primVBO $ graphic_state rn)
+    GL.vertexAttribPointer (U.getAttrib (shader_program rn) "coord3d") $=
+      (GL.ToFloat, GL.VertexArrayDescriptor 3 GL.Float 0 U.offset0)
+    GL.drawArrays drawMode primIndex numVerts
+    GL.vertexAttribArray (U.getAttrib (shader_program rn) "coord3d") $= GL.Disabled
+    GL.bindBuffer GL.ArrayBuffer $= Nothing
     where
         rn             = nodes state
 
+drawPrimLine :: HydraState -> 
+    Double -> Double -> Double ->
+    Double -> Double -> Double -> IO ()
+drawPrimLine state x1 y1 z1 x2 y2 z2 = do
+    drawPrimitive state mat GL.Lines primLineIndex primLineVerts
+    where
+        xx1   = realToFrac x1 :: GL.GLfloat
+        yy1   = realToFrac y1 :: GL.GLfloat
+        zz1   = realToFrac z1 :: GL.GLfloat
+        xx2   = realToFrac x2 :: GL.GLfloat
+        yy2   = realToFrac y2 :: GL.GLfloat
+        zz2   = realToFrac z2 :: GL.GLfloat
+        scl   = L.V4 (L.V4 (xx2 - xx1) 0 0 0) (L.V4 0 (yy2 - yy1) 0 0) (L.V4 0 0 (zz2 - zz1) 0) (L.V4 0 0 0 1)
+        trans = L.mkTransformationMat (L.identity :: L.M33 GL.GLfloat) $ L.V3 xx1 yy1 zz1
+        mat   = scl L.!*! trans
+
+drawPrimRect :: HydraState -> Double -> Double -> IO ()
+drawPrimRect state width height = do
+    dmode <- get_draw_mode $ lua_state $ nodes state 
+    drawPrimitive state mat (whichMode dmode) primRectIndex primRectVerts
+    where
+        mat = L.V4 (L.V4 (realToFrac width) 0 0 0) (L.V4 0 (realToFrac height) 0 0) (L.V4 0 0 1 0) (L.V4 0 0 0 1)
+        whichMode m = case m of
+                       Fill   -> GL.Quads 
+                       Stroke -> GL.LineLoop 
+-}
 drawLine :: HydraState -> 
     Double -> Double -> Double ->
     Double -> Double -> Double -> IO ()
