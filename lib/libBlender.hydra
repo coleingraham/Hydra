@@ -8,37 +8,145 @@ is meant to mirror how Blender handles its assets.
 --]]
 
 Blender = {
-     world     = {} -- instance of Blender.World
+     scenes    = {} -- all scenes
+    ,scene     = function (self,name)
+        return self.scenes[name]
+    end
     ,objects   = {} -- all objects
+    ,object    = function (self,name)
+        return self.objects[name]
+    end
     ,meshes    = {} -- all meshes
+    ,mesh      = function (self,name)
+        return self.meshes[name]
+    end
     ,materials = {} -- all materials
+    ,material  = function (self,name)
+        return self.materials[name]
+    end
     ,textures  = {} -- all textures
+    ,texture   = function (self,name)
+        return self.textures[name]
+    end
 }
 
 function Blender:new() 
     b = {}
-    b.world = Blender.World:new(b)
     setmetatable(b,self)
     self.__index = self
     return b
 end
 
-Blender.World = {
+function Blender:newScene(name)
+    self.scenes[name] = Blender.Scene:new(self,name)
+end
+
+function Blender:newObject(name)
+    self.objects[name] = Blender.Object:new(self,name)
+end
+
+Blender.Scene = {
      blender    = {}
+    ,name       = ""
     ,background = background(0)
     ,camera     = Camera:new()
     ,objects    = {}
-    ,show       = function ()
-        for _,objName in pairs(objects) do
-            -- blender.objects[objName].show()
+    ,show       = function (self)
+        for _,objName in pairs(self.objects) do
+            self.blender.objects[objName].show()
         end
     end
 }
 
-function Blender.World:new(b)
-    w = { blender = b }
+function Blender.Scene:new(b,n)
+    w = { blender = b, name = n or "default" }
     setmetatable(w,self)
     self.__index = self
     return w
 end
 
+function Blender.Scene:addObject(name)
+    table.insert(self.objects,name)
+end
+
+function Blender.Scene:removeObject(name)
+    for i,n in pairs(self.objects) do
+        if n == name then
+            table.remove(self.objects,i)
+        end
+    end
+end
+
+function Blender.Scene.newObject(self,name)
+    self.blender.newObject(self.blender,name)
+    self.blender.addObject(self.blender,name)
+end
+
+Blender.Object = {
+     blender   = {}
+    ,name      = ""
+    ,location  = Vec:new()
+    ,rotation  = Vec:new()
+    ,scale     = Vec:new()
+    ,parent    = nil
+    ,children  = {}
+    ,modifiers = {}
+    ,meshes    = {}
+    ,showMesh  = function (self)
+        for _,meshName in pairs(self.meshes) do
+            pushMatrix()
+            scale(self.scale)
+            rotate(self.rotation)
+            translate(self.location)
+--            blender.meshes[meshName].showMesh()
+            popMatrix()
+        end
+    end
+    ,show      = function (self)
+        if self.parent ~= nil then
+            blender.objects[self.parent].show()
+        else
+           for _,child in pairs(self.children) do
+               pushMatrix()
+               scale(self.scale)
+               rotate(self.rotation)
+               translate(self.location)
+               blender.objects[child].show()
+               popMatrix()
+           end
+           self.showMesh()
+         end
+    end
+}
+
+function Blender.Object:new(b)
+    o = { blender = b, name = n or "default" }
+    setmetatable(o,self)
+    self.__index = self
+    return o
+end
+
+function Blender.Object:addMesh(name)
+    table.insert(self.meshes,name)
+end
+
+function Blender.Object:removeMesh(name)
+    for i,n in pairs(self.meshes) do
+        if n == name then
+            table.remove(self.meshes,i)
+        end
+    end
+end
+--[[
+function Blender.Object:setParent(target)
+    if target == nil then
+        if self.parent ~= nil then
+            for i,n in pairs(blender.objects) do
+                if n == self.parent.name then
+                    table.remove()
+                end
+            end
+        end
+    end
+end
+--]]
