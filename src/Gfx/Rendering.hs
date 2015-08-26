@@ -7,12 +7,12 @@ import           Control.Monad (unless)
 import qualified Data.ByteString as BS
 import           Data.IORef
 import qualified Data.Vector.Storable as V
-import qualified Graphics.Rendering.OpenGL as GL
-import           Graphics.Rendering.OpenGL.Raw
-import qualified Graphics.UI.GLFW as GLFW
-import           Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.GLUtil as U
 import qualified Graphics.GLUtil.Camera3D as U
+import qualified Graphics.Rendering.OpenGL as GL
+import           Graphics.Rendering.OpenGL (($=))
+import           Graphics.Rendering.OpenGL.Raw
+import qualified Graphics.UI.GLFW as GLFW
 import qualified Linear as L
 import qualified Scripting.Lua as Lua
 import           System.FilePath ((</>))

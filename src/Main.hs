@@ -6,6 +6,7 @@ import           Control.Concurrent.STM     (TQueue, atomically, newTQueueIO, tr
 import           Control.Concurrent
 import           Control.Monad
 import qualified Data.ByteString as BS
+import           Gfx.Instancing
 import           Gfx.Rendering
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW as GLFW
