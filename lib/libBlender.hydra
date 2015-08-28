@@ -119,7 +119,7 @@ Blender.Object = {
     end
 }
 
-function Blender.Object:new(b)
+function Blender.Object:new(b,n)
     o = { blender = b, name = n or "default" }
     setmetatable(o,self)
     self.__index = self
